@@ -1,0 +1,9 @@
+# dirs
+/build
+
+# executable files
+*.exe
+
+# logs
+
+*.log
