@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.0.0)
+
 set (CMAKE_C_COMPILER "D:/Program Files (x86)/LLVM/bin/clang.exe")
 set (CMAKE_CXX_COMPILER "D:/Program Files (x86)/LLVM/bin/clang++.exe")
 
@@ -6,4 +8,4 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(RunaEngine)
 
-add_executable(${PROJECT_NAME} src/Program/helloengine.c)
+add_executable(${PROJECT_NAME} src/Program/helloengine.cpp)
