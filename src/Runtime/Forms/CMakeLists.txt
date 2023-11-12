@@ -1,0 +1,1 @@
+add_library(Forms Win32/FormWin.cpp)
