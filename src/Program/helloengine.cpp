@@ -5,8 +5,6 @@ int main()
 {
   Form* form = new FormWin();
   form->InitForm(640, 480, "Runa Engine");
-  while (1) {
-    form->DisplayFrame(0);
-  }
+  while (form->DisplayFrame(0)) ;
   return 0;
 }

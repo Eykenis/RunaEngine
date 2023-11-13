@@ -25,7 +25,8 @@ void FormWin::InitForm(int formWidth, int formHeight, std::string title) {
   atom = RegisterClassEx(&wc);
   assert(atom != 0);
   
-  h_window = CreateWindow(title.c_str(), title.c_str(),
+  h_window = CreateWindowEx(0,
+    title.c_str(), title.c_str(),
     WS_OVERLAPPEDWINDOW,
     0, 0, formWidth, formHeight, NULL, NULL, GetModuleHandle(NULL), NULL
   );
@@ -42,12 +43,12 @@ void FormWin::DestroyForm() {
 
 int FormWin::DisplayFrame(unsigned char* buffer) {
   if (!buffer) {
+    if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) return 0;
     if(GetMessage(&msg, NULL, 0, 0)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
-      return msg.wParam;
+      return 1;
     }
-    else return 0;
   }
   return 0;
 }

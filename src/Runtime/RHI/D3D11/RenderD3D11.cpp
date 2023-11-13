@@ -215,18 +215,27 @@ void DiscardGraphicsResources() {
   SafeRelease(&g_pDeviceContext);
 }
 
+/* only do this in frame update */
 void RenderFrame() {
+
+  SetViewPort();
+
+  g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
+
   const FLOAT clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
   g_pDeviceContext->ClearRenderTargetView(g_pRTView, clearColor);
-  {
-    UINT stride = sizeof(VERTEX);
-    UINT offset = 0;
-    g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVBuffer, &stride, &offset);
-    // set organization format of data (triangle)
-    g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // pick next 3 vertices and draw!
-    g_pDeviceContext->Draw(3, 0);
-  }
+  UINT stride = sizeof(VERTEX);
+  UINT offset = 0;
+  g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVBuffer, &stride, &offset);
+  // set organization format of data (triangle)
+  g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  // set input layout
+  g_pDeviceContext->IASetInputLayout(g_pLayout);
+  // select shaders
+  g_pDeviceContext->VSSetShader(g_pVS, NULL, 0);
+  g_pDeviceContext->PSSetShader(g_pPS, NULL, 0);
+  // pick next 3 vertices and draw!
+  g_pDeviceContext->Draw(3, 0);
   // swap buffers
   g_pSwapChain->Present(0, 0);
 }
