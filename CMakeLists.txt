@@ -12,8 +12,8 @@ set(TARGET_PLATFORM "Windows")
 
 add_subdirectory(src/Runtime)
 
-add_executable(${PROJECT_NAME} src/Program/helloengine.cpp)
+add_executable(${PROJECT_NAME} src/Program/memory.cpp)
 target_link_libraries(${PROJECT_NAME}
   d3d11.lib dxgi.lib kernel32.lib user32.lib d3dcompiler.lib dxguid.lib
-  Forms RHI
+  Forms RHI Core
 )

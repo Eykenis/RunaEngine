@@ -228,7 +228,7 @@ void RenderFrame() {
   UINT offset = 0;
   g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVBuffer, &stride, &offset);
   // set organization format of data (triangle)
-  g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  g_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   // set input layout
   g_pDeviceContext->IASetInputLayout(g_pLayout);
   // select shaders
