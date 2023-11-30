@@ -22,6 +22,14 @@ static const uint32_t k_maxBlockSize = k_blockSizes[k_numBlockSizes - 1];
 static uint32_t *s_blockSizeLookup = nullptr;
 static Allocator s_allocators[k_numBlockSizes];
 
+MemoryManager::MemoryManager() {
+
+}
+
+MemoryManager::~MemoryManager() {
+
+}
+
 static Allocator* LookUpAllocator(uint32_t size) {
   // static is one-time
   static bool s_initialized = false;

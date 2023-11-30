@@ -1,7 +1,9 @@
 struct PSInput {
     float4 pos : SV_POSITION;
-    float4 color : COLOR;
+    float4 uv : TEXCOORD;
 };
+Texture2D tex;
+SamplerState samplerState;
 float4 PSMain(in PSInput input) : SV_TARGET {
-    return input.color;
+    return tex.Sample(samplerState, input.uv);
 }

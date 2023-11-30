@@ -6,6 +6,8 @@ private:
   void* Allocate(uint32_t size);
   void Free(void* p, uint32_t size);
 public:
+  MemoryManager();
+  virtual ~MemoryManager();
   template <typename T>
   T* New() {
     return new(Allocate(sizeof(T))) T();

@@ -1,6 +1,14 @@
 #include "RenderD3D11.h"
+#include <d3d11.h>
+#include <d3dcommon.h>
+#include <dxgiformat.h>
+#include <intsafe.h>
 #include <minwinbase.h>
+#include <wingdi.h>
 #include <winuser.h>
+#include <wrl.h>
+
+#include "../../AssetsImport/AssetsManager.h"
 
 const uint32_t SCREEN_WIDTH = 640;
 const uint32_t SCREEN_HEIGHT = 480;
@@ -16,15 +24,18 @@ ID3D11VertexShader *g_pVS = nullptr;
 ID3D11PixelShader *g_pPS = nullptr;
 ID3D11Buffer* g_pVBuffer = nullptr;
 
+ID3D11ShaderResourceView *g_pDiffuseSRV = nullptr;
+ID3D11SamplerState *g_pImageSamplerState;
+
 struct VERTEX {
   XMFLOAT3 Position;
-  XMFLOAT4 Color;
+  XMFLOAT2 UV;
 };
 
 VERTEX OutputVertices[] = {
-  {XMFLOAT3{0.0f, 0.5f, 0.0f}, XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)},
-  {DirectX::XMFLOAT3{0.45f, -0.5f, 0.0f}, DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)},
-  {DirectX::XMFLOAT3{-0.45f, -0.5f, 0.0f}, DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}
+  {XMFLOAT3{0.0f, 0.5f, 0.0f}, XMFLOAT2(0.5f, 1.0f)},
+  {XMFLOAT3{0.45f, -0.5f, 0.0f}, XMFLOAT2(1.0f, 0.0f)},
+  {XMFLOAT3{-0.45f, -0.5f, 0.0f}, XMFLOAT2(0.0f, 0.0f)},
 };
 
 
@@ -38,9 +49,11 @@ void CreateRenderTarget() {
   HRESULT hr;
   ID3D11Texture2D *pBackBuffer;
 
-  g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+  hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+  assert(SUCCEEDED(hr));
 
-  g_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRTView);
+  hr = g_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRTView);
+  assert(SUCCEEDED(hr));
 
   pBackBuffer->Release();
 
@@ -85,6 +98,7 @@ HRESULT CompileShader(LPCWSTR fileName, LPCSTR entryPoint, LPCSTR profile, ID3DB
     &pTmpBlob,
     &pErrBlob
   );
+
   if (FAILED(hr)) {
     if (pErrBlob) {
       printf("Shader Compile Error: %s", (char*)pErrBlob->GetBufferPointer());
@@ -96,13 +110,13 @@ HRESULT CompileShader(LPCWSTR fileName, LPCSTR entryPoint, LPCSTR profile, ID3DB
     return hr;
   }
   *pShaderBlob = pTmpBlob;
+
   return hr;
 }
 
 BOOL InitPipeline() {
   ID3DBlob *pVSBlob, *pPSBlob, *pErrBlob;
   HRESULT hr;
-
   // compile shaders
   hr = CompileShader(L"../src/Runtime/RHI/D3D11/shader.vs", "VSMain", "vs_5_0", &pVSBlob);
   if (FAILED(hr)) {
@@ -116,20 +130,21 @@ BOOL InitPipeline() {
   }
 
   // set to device shader
-  g_pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_pVS);
-  g_pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_pPS);
-
-  g_pDeviceContext->VSSetShader(g_pVS, 0, 0);
-  g_pDeviceContext->PSSetShader(g_pPS, 0, 0);
+  hr = g_pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_pVS);
+  assert(SUCCEEDED(hr));
+  hr = g_pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_pPS);
+  assert(SUCCEEDED(hr));
 
   // create input layout
   D3D11_INPUT_ELEMENT_DESC ied[] = 
   {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
   };
 
-  g_pDevice->CreateInputLayout(ied, 2, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &g_pLayout);
+  hr = g_pDevice->CreateInputLayout(ied, ARRAYSIZE(ied), pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &g_pLayout);
+  assert(SUCCEEDED(hr));
+
   g_pDeviceContext->IASetInputLayout(g_pLayout);
 
   pVSBlob->Release();
@@ -140,22 +155,67 @@ BOOL InitPipeline() {
 
 void InitGraphics()
 {
+  HRESULT hr;
   // create vertex buffer (for GPU use)
   D3D11_BUFFER_DESC bd;
   ZeroMemory(&bd, sizeof(bd));
 
-  bd.Usage = D3D11_USAGE_DYNAMIC;
-  bd.ByteWidth = sizeof(VERTEX) * 3; // each triangle has 3 vertices
+  bd.Usage = D3D11_USAGE_DEFAULT;
+  bd.ByteWidth = sizeof(OutputVertices);
   bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-  bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-  g_pDevice->CreateBuffer(&bd, NULL, &g_pVBuffer);
+  D3D11_SUBRESOURCE_DATA vertexDataInitial = { OutputVertices };
 
-  D3D11_MAPPED_SUBRESOURCE ms;
-  // Switch to the context of the GPU buffer & copy data from CPU to GPU
-  g_pDeviceContext->Map(g_pVBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
-  memcpy(ms.pData, OutputVertices, sizeof(VERTEX) * 3);
-  g_pDeviceContext->Unmap(g_pVBuffer, NULL);
+  hr = g_pDevice->CreateBuffer(&bd, &vertexDataInitial, &g_pVBuffer);
+  assert(SUCCEEDED(hr));
+
+  // Create Texture
+  // **********
+
+  AssetsManager loader;
+  ImageBufferHeader* image = reinterpret_cast<ImageBufferHeader*>(loader.LoadAsset("../assets/Images/test.png"));
+  uint32_t imagePitch = (image->width << 2u);
+
+  ID3D11Texture2D *pTex;
+  D3D11_TEXTURE2D_DESC desc;
+
+  desc.Width = image->width;
+  desc.Height = image->height;
+  desc.MipLevels = 1;
+  desc.ArraySize = 1;
+  desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  desc.SampleDesc.Count = 1;
+  desc.SampleDesc.Quality = 0;
+  desc.Usage = D3D11_USAGE_DEFAULT;
+  desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+  desc.CPUAccessFlags = 0;
+
+  D3D11_SUBRESOURCE_DATA initData;
+  initData.pSysMem = image->data;
+  initData.SysMemPitch = imagePitch;
+
+  g_pDevice->CreateTexture2D(&desc, &initData, &pTex);
+  free(image->data);
+
+  g_pDevice->CreateShaderResourceView(pTex, nullptr, &g_pDiffuseSRV);
+
+  const FLOAT borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+  CD3D11_SAMPLER_DESC imageSamplerDesc(
+    D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+    D3D11_TEXTURE_ADDRESS_CLAMP,
+    D3D11_TEXTURE_ADDRESS_CLAMP,
+    D3D11_TEXTURE_ADDRESS_CLAMP,
+    0.0f,
+    1,
+    D3D11_COMPARISON_NEVER,
+    borderColor,
+    -FLT_MAX,
+    FLT_MAX
+  );
+
+  g_pDevice->CreateSamplerState(&imageSamplerDesc, &g_pImageSamplerState);
+
+  // **********
 }
 
 HRESULT CreateGraphicsResources(HWND hwnd) {
@@ -234,6 +294,9 @@ void RenderFrame() {
   // select shaders
   g_pDeviceContext->VSSetShader(g_pVS, NULL, 0);
   g_pDeviceContext->PSSetShader(g_pPS, NULL, 0);
+  // set shader resources
+  g_pDeviceContext->PSSetShaderResources(0, 1, &g_pDiffuseSRV);
+  g_pDeviceContext->PSSetSamplers(0, 1, &g_pImageSamplerState);
   // pick next 3 vertices and draw!
   g_pDeviceContext->Draw(3, 0);
   // swap buffers

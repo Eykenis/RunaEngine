@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.5.0)
 
 set (CMAKE_C_COMPILER "D:/Program Files (x86)/LLVM/bin/clang.exe")
+set (CMAKE_C_FLAGS "-Wall")
+
 set (CMAKE_CXX_COMPILER "D:/Program Files (x86)/LLVM/bin/clang++.exe")
+set (CMAKE_CXX_FLAGS "-Wall")
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
@@ -12,8 +15,17 @@ set(TARGET_PLATFORM "Windows")
 
 add_subdirectory(src/Runtime)
 
-add_executable(${PROJECT_NAME} src/Program/memory.cpp)
+include_directories(${PROJECT_SOURCE_DIR}/exlib/libpng/include)
+add_library(libpng STATIC IMPORTED)
+set_target_properties(libpng PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/exlib/libpng/lib/libpng16_static.lib)
+add_library(zlib STATIC IMPORTED )
+set_target_properties(zlib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/exlib/zlib/lib/zlibstatic.lib)
+
+
+add_executable(${PROJECT_NAME} src/Program/helloengine.cpp)
+
 target_link_libraries(${PROJECT_NAME}
   d3d11.lib dxgi.lib kernel32.lib user32.lib d3dcompiler.lib dxguid.lib
-  Forms RHI Core
+  Forms RHI Core AssetsImport
+  libpng zlib
 )

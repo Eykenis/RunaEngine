@@ -5,6 +5,7 @@
 
 extern IDXGISwapChain* g_pSwapChain;
 
+
 LRESULT CALLBACK myWndProc(
   HWND hwnd,
   UINT message,
