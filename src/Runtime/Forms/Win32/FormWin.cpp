@@ -1,10 +1,12 @@
 #include "FormWin.h"
 #include "../../RHI/D3D11/RenderD3D11.h"
+#include "../../RHI/OpenGL/RenderGL.h"
 #include <dxgi.h>
 #include <winuser.h>
 
 extern IDXGISwapChain* g_pSwapChain;
 
+RenderModule* render;
 
 LRESULT CALLBACK myWndProc(
   HWND hwnd,
@@ -13,7 +15,7 @@ LRESULT CALLBACK myWndProc(
   LPARAM lparam
 );
 
-void FormWin::InitForm(int formWidth, int formHeight, std::string title) {
+void FormWin::InitForm(int formWidth, int formHeight, std::string title, int rhi) {
 
   ATOM atom;
   ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -35,21 +37,32 @@ void FormWin::InitForm(int formWidth, int formHeight, std::string title) {
 
   ShowWindow(h_window, SW_SHOW);
 
+  if (rhi == FORM_RHI_D3D11) {
+    render = new RenderD3D11;
+    dynamic_cast<RenderD3D11*>(render)->getHwnd(h_window);
+  }
+  else if (rhi == FORM_RHI_OPENGL) {
+    render = new RenderGL;
+    dynamic_cast<RenderGL*>(render)->getHwnd(h_window);
+  }
+
+  render->init();
+  
   return;
 }
 
 void FormWin::DestroyForm() {
-
+  render->release();
 }
 
 int FormWin::DisplayFrame(unsigned char* buffer) {
   if (!buffer) {
-    if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) return 0;
-    if(GetMessage(&msg, NULL, 0, 0)) {
+    if (GetMessage(&msg, NULL, 0, 0)) {
+      if (msg.message == WM_QUIT) return 0;
       TranslateMessage(&msg);
       DispatchMessage(&msg);
-      return 1;
     }
+    return 1;
   }
   return 0;
 }
@@ -65,15 +78,9 @@ LRESULT CALLBACK myWndProc(
   switch (message)
   {
     case WM_PAINT:
-    hr = CreateGraphicsResources(hwnd);
-    RenderFrame();
-    case WM_SIZE:
-    if (g_pSwapChain != nullptr) {
-      DiscardGraphicsResources();
-    }
-    break;
+    render->clear();
+    render->draw();
     case WM_DESTROY:
-    DiscardGraphicsResources();
     PostQuitMessage(0);
     break;
     case WM_DISPLAYCHANGE:

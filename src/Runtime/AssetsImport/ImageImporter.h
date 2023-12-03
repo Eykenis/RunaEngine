@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include "../../../exlib/libpng/include/png.h"
+#include <png.h>
 
 struct ImageBufferHeader {
   void* data;

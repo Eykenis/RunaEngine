@@ -22,11 +22,15 @@
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
-void CreateRenderTarget();
-void SetViewPort();
-HRESULT CompileShader(const char *srcData, LPCSTR profile, ID3DBlob* pShaderBlob) ;
-BOOL InitPipeline();
-void InitGraphics();
-HRESULT CreateGraphicsResources(HWND hwnd);
-void DiscardGraphicsResources();
-void RenderFrame();
+class RenderD3D11 : public RenderModule {
+public:
+  virtual int init();
+  virtual int release();
+  virtual void clear();
+  virtual void draw();
+  virtual ~RenderD3D11();
+
+  void getHwnd(HWND hwnd);
+private:
+  HWND m_hwnd;
+};

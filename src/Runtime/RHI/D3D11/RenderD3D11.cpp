@@ -1,13 +1,4 @@
 #include "RenderD3D11.h"
-#include <d3d11.h>
-#include <d3dcommon.h>
-#include <dxgiformat.h>
-#include <intsafe.h>
-#include <minwinbase.h>
-#include <wingdi.h>
-#include <winuser.h>
-#include <wrl.h>
-
 #include "../../AssetsImport/AssetsManager.h"
 
 const uint32_t SCREEN_WIDTH = 640;
@@ -38,38 +29,10 @@ VERTEX OutputVertices[] = {
   {XMFLOAT3{-0.45f, -0.5f, 0.0f}, XMFLOAT2(0.0f, 0.0f)},
 };
 
-
 template<class T>
 inline void SafeRelease(T **pToRelease) {
   if (pToRelease != nullptr) (*pToRelease)->Release();
   *pToRelease = nullptr;
-}
-
-void CreateRenderTarget() {
-  HRESULT hr;
-  ID3D11Texture2D *pBackBuffer;
-
-  hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-  assert(SUCCEEDED(hr));
-
-  hr = g_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRTView);
-  assert(SUCCEEDED(hr));
-
-  pBackBuffer->Release();
-
-  g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
-}
-
-void SetViewPort() {
-  D3D11_VIEWPORT viewport;
-  ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-
-  viewport.TopLeftX = 0;
-  viewport.TopLeftY = 0;
-  viewport.Width = SCREEN_WIDTH;
-  viewport.Height = SCREEN_HEIGHT;
-  
-  g_pDeviceContext->RSSetViewports(1, &viewport);
 }
 
 HRESULT CompileShader(LPCWSTR fileName, LPCSTR entryPoint, LPCSTR profile, ID3DBlob **pShaderBlob) {
@@ -114,111 +77,38 @@ HRESULT CompileShader(LPCWSTR fileName, LPCSTR entryPoint, LPCSTR profile, ID3DB
   return hr;
 }
 
-BOOL InitPipeline() {
-  ID3DBlob *pVSBlob, *pPSBlob, *pErrBlob;
-  HRESULT hr;
-  // compile shaders
-  hr = CompileShader(L"../src/Runtime/RHI/D3D11/shader.vs", "VSMain", "vs_5_0", &pVSBlob);
-  if (FAILED(hr)) {
-    printf("Failed compiling vertex shader: %08lX\n", hr);
-    return FALSE;
-  }
-  hr = CompileShader(L"../src/Runtime/RHI/D3D11/shader.ps", "PSMain", "ps_5_0", &pPSBlob);
-  if (FAILED(hr)) {
-    printf("Failed compiling pixel shader: %08lX\n", hr);
-    return FALSE;
-  }
-
-  // set to device shader
-  hr = g_pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_pVS);
-  assert(SUCCEEDED(hr));
-  hr = g_pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_pPS);
-  assert(SUCCEEDED(hr));
-
-  // create input layout
-  D3D11_INPUT_ELEMENT_DESC ied[] = 
-  {
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-  };
-
-  hr = g_pDevice->CreateInputLayout(ied, ARRAYSIZE(ied), pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &g_pLayout);
-  assert(SUCCEEDED(hr));
-
-  g_pDeviceContext->IASetInputLayout(g_pLayout);
-
-  pVSBlob->Release();
-  pPSBlob->Release();
-
-  return TRUE;
+void DiscardGraphicsResources() {
+  SafeRelease(&g_pLayout);
+  SafeRelease(&g_pVS);
+  SafeRelease(&g_pPS);
+  SafeRelease(&g_pVBuffer);
+  SafeRelease(&g_pSwapChain);
+  SafeRelease(&g_pRTView);
+  SafeRelease(&g_pDevice);
+  SafeRelease(&g_pDeviceContext);
 }
 
-void InitGraphics()
-{
-  HRESULT hr;
-  // create vertex buffer (for GPU use)
-  D3D11_BUFFER_DESC bd;
-  ZeroMemory(&bd, sizeof(bd));
+void SetViewPort() {
+  D3D11_VIEWPORT viewport;
+  ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 
-  bd.Usage = D3D11_USAGE_DEFAULT;
-  bd.ByteWidth = sizeof(OutputVertices);
-  bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-  D3D11_SUBRESOURCE_DATA vertexDataInitial = { OutputVertices };
-
-  hr = g_pDevice->CreateBuffer(&bd, &vertexDataInitial, &g_pVBuffer);
-  assert(SUCCEEDED(hr));
-
-  // Create Texture
-  // **********
-
-  AssetsManager loader;
-  ImageBufferHeader* image = reinterpret_cast<ImageBufferHeader*>(loader.LoadAsset("../assets/Images/test.png"));
-  uint32_t imagePitch = (image->width << 2u);
-
-  ID3D11Texture2D *pTex;
-  D3D11_TEXTURE2D_DESC desc;
-
-  desc.Width = image->width;
-  desc.Height = image->height;
-  desc.MipLevels = 1;
-  desc.ArraySize = 1;
-  desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-  desc.SampleDesc.Count = 1;
-  desc.SampleDesc.Quality = 0;
-  desc.Usage = D3D11_USAGE_DEFAULT;
-  desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-  desc.CPUAccessFlags = 0;
-
-  D3D11_SUBRESOURCE_DATA initData;
-  initData.pSysMem = image->data;
-  initData.SysMemPitch = imagePitch;
-
-  g_pDevice->CreateTexture2D(&desc, &initData, &pTex);
-  free(image->data);
-
-  g_pDevice->CreateShaderResourceView(pTex, nullptr, &g_pDiffuseSRV);
-
-  const FLOAT borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-  CD3D11_SAMPLER_DESC imageSamplerDesc(
-    D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-    D3D11_TEXTURE_ADDRESS_CLAMP,
-    D3D11_TEXTURE_ADDRESS_CLAMP,
-    D3D11_TEXTURE_ADDRESS_CLAMP,
-    0.0f,
-    1,
-    D3D11_COMPARISON_NEVER,
-    borderColor,
-    -FLT_MAX,
-    FLT_MAX
-  );
-
-  g_pDevice->CreateSamplerState(&imageSamplerDesc, &g_pImageSamplerState);
-
-  // **********
+  viewport.TopLeftX = 0;
+  viewport.TopLeftY = 0;
+  viewport.Width = SCREEN_WIDTH;
+  viewport.Height = SCREEN_HEIGHT;
+  
+  g_pDeviceContext->RSSetViewports(1, &viewport);
 }
 
-HRESULT CreateGraphicsResources(HWND hwnd) {
+RenderD3D11::~RenderD3D11() {
+  
+}
+
+void RenderD3D11::getHwnd(HWND hwnd) {
+  m_hwnd = hwnd;
+}
+
+int RenderD3D11::init() {
   HRESULT hr = S_OK;
   if (g_pSwapChain == nullptr) {
     // create swap chain
@@ -232,7 +122,7 @@ HRESULT CreateGraphicsResources(HWND hwnd) {
     sd.BufferDesc.RefreshRate.Numerator = REFRESH_RATE;
     sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = hwnd;
+    sd.OutputWindow = m_hwnd;
     sd.SampleDesc.Count = 4;
     sd.Windowed = TRUE;
     sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -256,34 +146,123 @@ HRESULT CreateGraphicsResources(HWND hwnd) {
     if (FAILED(hr)) {
       return hr;
     }
-    CreateRenderTarget();
+    // Create Render Target.
+    ID3D11Texture2D *pBackBuffer;
+    hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    assert(SUCCEEDED(hr));
+    hr = g_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_pRTView);
+    assert(SUCCEEDED(hr));
+    pBackBuffer->Release();
+    g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
+
     SetViewPort();
-    InitPipeline();
-    InitGraphics();
+
+    ID3DBlob *pVSBlob, *pPSBlob, *pErrBlob;
+    // compile shaders
+    hr = CompileShader(L"../assets/shaders/shader.vs", "VSMain", "vs_5_0", &pVSBlob);
+    if (FAILED(hr)) {
+      printf("Failed compiling vertex shader: %08lX\n", hr);
+      return FALSE;
+    }
+    hr = CompileShader(L"../assets/shaders/shader.ps", "PSMain", "ps_5_0", &pPSBlob);
+    if (FAILED(hr)) {
+      printf("Failed compiling pixel shader: %08lX\n", hr);
+      return FALSE;
+    }
+
+    // set to device shader
+    hr = g_pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_pVS);
+    assert(SUCCEEDED(hr));
+    hr = g_pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_pPS);
+    assert(SUCCEEDED(hr));
+
+    // create input layout
+    D3D11_INPUT_ELEMENT_DESC ied[] = 
+    {
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+      {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    };
+
+    hr = g_pDevice->CreateInputLayout(ied, ARRAYSIZE(ied), pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &g_pLayout);
+    assert(SUCCEEDED(hr));
+
+    g_pDeviceContext->IASetInputLayout(g_pLayout);
+
+    pVSBlob->Release();
+    pPSBlob->Release();
+
+    // create vertex buffer (for GPU use)
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(OutputVertices);
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+    D3D11_SUBRESOURCE_DATA vertexDataInitial = { OutputVertices };
+
+    hr = g_pDevice->CreateBuffer(&bd, &vertexDataInitial, &g_pVBuffer);
+    assert(SUCCEEDED(hr));
+
+    // Create Texture
+    // **********
+
+    AssetsManager loader;
+    ImageBufferHeader* image = reinterpret_cast<ImageBufferHeader*>(loader.LoadAsset("../assets/Images/test.png"));
+    uint32_t imagePitch = (image->width << 2u);
+
+    ID3D11Texture2D *pTex;
+    D3D11_TEXTURE2D_DESC desc;
+
+    desc.Width = image->width;
+    desc.Height = image->height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA initData;
+    initData.pSysMem = image->data;
+    initData.SysMemPitch = imagePitch;
+
+    g_pDevice->CreateTexture2D(&desc, &initData, &pTex);
+    free(image->data);
+
+    g_pDevice->CreateShaderResourceView(pTex, nullptr, &g_pDiffuseSRV);
+
+    const FLOAT borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    CD3D11_SAMPLER_DESC imageSamplerDesc(
+      D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+      D3D11_TEXTURE_ADDRESS_CLAMP,
+      D3D11_TEXTURE_ADDRESS_CLAMP,
+      D3D11_TEXTURE_ADDRESS_CLAMP,
+      0.0f,
+      1,
+      D3D11_COMPARISON_NEVER,
+      borderColor,
+      -FLT_MAX,
+      FLT_MAX
+    );
+
+    g_pDevice->CreateSamplerState(&imageSamplerDesc, &g_pImageSamplerState);
+
+    // **********
   }
   return hr;
 }
 
-void DiscardGraphicsResources() {
-  SafeRelease(&g_pLayout);
-  SafeRelease(&g_pVS);
-  SafeRelease(&g_pPS);
-  SafeRelease(&g_pVBuffer);
-  SafeRelease(&g_pSwapChain);
-  SafeRelease(&g_pRTView);
-  SafeRelease(&g_pDevice);
-  SafeRelease(&g_pDeviceContext);
-}
-
-/* only do this in frame update */
-void RenderFrame() {
-
-  SetViewPort();
-
-  g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
-
+void RenderD3D11::clear() {
   const FLOAT clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
   g_pDeviceContext->ClearRenderTargetView(g_pRTView, clearColor);
+}
+
+void RenderD3D11::draw() {
+  SetViewPort();
+  g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
   UINT stride = sizeof(VERTEX);
   UINT offset = 0;
   g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVBuffer, &stride, &offset);
@@ -301,4 +280,9 @@ void RenderFrame() {
   g_pDeviceContext->Draw(3, 0);
   // swap buffers
   g_pSwapChain->Present(0, 0);
+}
+
+int RenderD3D11::release() {
+  DiscardGraphicsResources();
+  return 1;
 }
