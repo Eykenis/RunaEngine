@@ -2,5 +2,6 @@
   "clangd.fallbackFlags": [
     "-I${workspaceFolder}/include",
     "-I${workspaceFolder}"
-  ]
+  ],
+  "cmake.configureOnOpen": false
 }

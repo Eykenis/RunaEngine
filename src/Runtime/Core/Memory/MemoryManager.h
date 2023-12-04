@@ -5,8 +5,8 @@ class MemoryManager {
 private:
   void* Allocate(uint32_t size);
   void Free(void* p, uint32_t size);
-public:
   MemoryManager();
+public:
   virtual ~MemoryManager();
   template <typename T>
   T* New() {
@@ -22,5 +22,10 @@ public:
   void Delete(T* p) {
     reinterpret_cast<T*>(p)->~T();
     Free(p, sizeof(T));
+  }
+
+  static MemoryManager* GetInstance() {
+    static MemoryManager manager;
+    return &manager;
   }
 };

@@ -5,8 +5,7 @@
 
 int main()
 {
-  MemoryManager manager;
-  Form* form = dynamic_cast<FormWin*>(manager.New<FormWin>());
+  Form* form = dynamic_cast<FormWin*>(MemoryManager::GetInstance()->New<FormWin>());
   std::cout << "Select API you want. 1 for OpenGL, 2 for DirectX 11." << std::endl;
   int api; std::cin >> api;
   form->InitForm(640, 480, "Runa Engine", api);
