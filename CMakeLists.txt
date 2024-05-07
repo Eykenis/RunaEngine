@@ -18,14 +18,18 @@ add_subdirectory(src/Runtime)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 add_library(libpng STATIC IMPORTED)
 set_target_properties(libpng PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/lib/libpng16_static.lib)
-add_library(zlib STATIC IMPORTED )
+add_library(zlib STATIC IMPORTED)
 set_target_properties(zlib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/lib/zlibstatic.lib)
+add_library(crossguid STATIC IMPORTED)
+set_target_properties(crossguid PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/lib/crossguid-dgb.lib)
+add_library(assimp STATIC IMPORTED)
+set_target_properties(assimp PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/lib/assimp-vc143-mtd.lib)
 
 add_executable(${PROJECT_NAME} src/Program/helloengine.cpp src/Program/glad.c)
 
 target_link_libraries(${PROJECT_NAME}
   d3d11.lib dxgi.lib kernel32.lib user32.lib d3dcompiler.lib dxguid.lib
   gdi32.lib opengl32.lib
-  Forms RHI Core AssetsImport
-  libpng zlib
+  Forms RHI Core AssetsImport Scene
+  libpng zlib crossguid assimp
 )

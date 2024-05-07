@@ -157,7 +157,7 @@ int RenderD3D11::init() {
 
     SetViewPort();
 
-    ID3DBlob *pVSBlob, *pPSBlob, *pErrBlob;
+    ID3DBlob *pVSBlob, *pPSBlob;
     // compile shaders
     hr = CompileShader(L"../assets/shaders/shader.vs", "VSMain", "vs_5_0", &pVSBlob);
     if (FAILED(hr)) {

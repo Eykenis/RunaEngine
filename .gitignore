@@ -1,5 +1,6 @@
 # dirs
 /build
+/.vscode
 
 # executable files
 *.exe

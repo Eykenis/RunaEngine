@@ -1,8 +1,6 @@
 #include "FormWin.h"
 #include "../../RHI/D3D11/RenderD3D11.h"
 #include "../../RHI/OpenGL/RenderGL.h"
-#include <dxgi.h>
-#include <winuser.h>
 
 extern IDXGISwapChain* g_pSwapChain;
 
@@ -44,6 +42,10 @@ void FormWin::InitForm(int formWidth, int formHeight, std::string title, int rhi
   else if (rhi == FORM_RHI_OPENGL) {
     render = new RenderGL;
     dynamic_cast<RenderGL*>(render)->getHwnd(h_window);
+  }
+  else {
+    std::cout << "Form Init Failed: Illegal Render API" << std::endl;
+    return;
   }
 
   render->init();

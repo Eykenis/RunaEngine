@@ -5,8 +5,6 @@
 #include <iostream>
 #include <png.h>
 
-#include "../Core/Memory/MemoryManager.h"
-
 struct ImageBufferHeader {
   void* data;
   uint32_t width, height;

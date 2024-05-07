@@ -4,6 +4,9 @@
 #include <tchar.h>
 #include <wingdi.h>
 #include <winuser.h>
+#include <dxgi.h>
+
+#include <iostream>
 
 #include "../Form.h"
 

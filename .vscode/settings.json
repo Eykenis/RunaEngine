@@ -1,7 +1,8 @@
 {
   "clangd.fallbackFlags": [
     "-I${workspaceFolder}/include",
-    "-I${workspaceFolder}"
+    "-I${workspaceFolder}",
+    "--std=c++17"
   ],
-  "cmake.configureOnOpen": false
+  "cmake.configureOnOpen": false,
 }

@@ -1,7 +1,11 @@
 #pragma once
 #include "GameObject.h"
-#include "Component.h"
 
 class SceneManager {
-  
+private:
+  GameObject* HierachyRoot;
+public:
+  SceneManager(GameObject* root = new GameObject) : HierachyRoot(root) { };
+  void Destroy(GameObject* gameObjectToDestroy);
+  ~SceneManager();
 };
