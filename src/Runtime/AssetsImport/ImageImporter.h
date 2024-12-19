@@ -10,11 +10,11 @@ struct ImageBufferHeader {
   uint32_t width, height;
   uint32_t channel_depth;
   enum class ColorType {
-    RGB,
-    RGBA,
-    Grayscale,
-    GrayscaleA,
-    Palette,
+    RGB = 3,
+    RGBA = 4,
+    Grayscale = 1,
+    GrayscaleA = 2,
+    Palette = 3,
   };
   ColorType color_type;
 };

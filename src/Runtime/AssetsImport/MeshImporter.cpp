@@ -1,4 +1,6 @@
 #include "MeshImporter.h"
+#include "assimp/postprocess.h"
+#include <cassert>
 
 std::vector<Texture> LoadTexture(aiMaterial* mat, aiTextureType type) {
   std::vector<Texture> textures;
@@ -14,24 +16,32 @@ std::vector<Texture> LoadTexture(aiMaterial* mat, aiTextureType type) {
 
 Mesh MeshImporter::ProcessMesh(aiMesh* mesh, const aiScene *scene) {
   Mesh ret;
-  // MVP matrix'll be add in GO
-
   // vertex
   for (uint32_t i = 0; i < mesh->mNumVertices; ++i) {
-    ret.Position.emplace_back(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-    ret.Normal.emplace_back(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+    ret.Position.emplace_back(mesh->mVertices[i].x);
+    ret.Position.emplace_back(mesh->mVertices[i].y);
+    ret.Position.emplace_back(mesh->mVertices[i].z);
+    ret.Normal.emplace_back(mesh->mNormals[i].x);
+    ret.Normal.emplace_back(mesh->mNormals[i].y);
+    ret.Normal.emplace_back(mesh->mNormals[i].z);
   }
   for (uint32_t i = 0; i < MAX_TEXCOORD_COUNT; ++i) {
     if (!mesh->mTextureCoords[i]) break;
     ret.TexCoordCount++;
+    // printf("TEXCOORD :%d\n", i);
     for (uint32_t j = 0; j < mesh->mNumVertices; ++j) {
-      ret.TexCoord[i].emplace_back(mesh->mTextureCoords[i][j].x, mesh->mTextureCoords[i][j].y);
+      // printf("%f %f %f\n", mesh->mTextureCoords[i][j].x, mesh->mTextureCoords[i][j].y, mesh->mTextureCoords[i][j].z);
+      ret.TexCoord[i].emplace_back(mesh->mTextureCoords[i][j].x);
+      ret.TexCoord[i].emplace_back(mesh->mTextureCoords[i][j].y);
+      ret.TexCoord[i].emplace_back(mesh->mTextureCoords[i][j].z);
     }
   }
   // index
   for (uint32_t i = 0; i < mesh->mNumFaces; ++i) {
     assert(mesh->mFaces[i].mNumIndices == 3);
-    ret.Face.emplace_back(mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2]);
+    ret.Face.emplace_back(mesh->mFaces[i].mIndices[0]);
+    ret.Face.emplace_back(mesh->mFaces[i].mIndices[1]);
+    ret.Face.emplace_back(mesh->mFaces[i].mIndices[2]);
   }
   // material?
   if (mesh->mMaterialIndex >= 0) {
@@ -56,7 +66,7 @@ void MeshImporter::ProcessNode(MeshNode* meshNode, aiNode* node, const aiScene* 
 
 MeshReference* MeshImporter::ReadMesh(const std::string& fileName) {
   Assimp::Importer import;
-  const aiScene *scene = import.ReadFile(fileName, aiProcess_Triangulate);
+  const aiScene *scene = import.ReadFile(fileName, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices);
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
     std::cerr << import.GetErrorString() << std::endl;
     return nullptr;

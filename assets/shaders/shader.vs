@@ -1,15 +1,14 @@
-struct VSInput {
-    float3 pos : POSITION;
-    float2 uv : TEXCOORD;
-};
-struct VSOutput {
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD;
-};
-
-VSOutput VSMain(in VSInput input) {
-    VSOutput output;
-    output.pos = float4(input.pos, 1.0);
-    output.uv = input.uv;
-    return output;
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec3 aTexCoord;
+out vec3 normal;
+out vec3 fragpos;
+out vec2 texcoord;
+void main()
+{
+    gl_Position = vec4(-aPos.x, aPos.y - 0.8, -aPos.z, 1.0);
+    fragpos = aPos;
+    normal = aNormal;
+    texcoord = vec2(aTexCoord.x, aTexCoord.y);
 }

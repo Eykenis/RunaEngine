@@ -1,3 +1,9 @@
+/***
+
+Deprecated
+
+***/
+
 #include "RenderD3D11.h"
 #include "../../AssetsImport/AssetsManager.h"
 
@@ -108,7 +114,7 @@ void RenderD3D11::getHwnd(HWND hwnd) {
   m_hwnd = hwnd;
 }
 
-int RenderD3D11::init() {
+int RenderD3D11::Init() {
   HRESULT hr = S_OK;
   if (g_pSwapChain == nullptr) {
     // create swap chain
@@ -255,12 +261,12 @@ int RenderD3D11::init() {
   return hr;
 }
 
-void RenderD3D11::clear() {
+void RenderD3D11::Clear() {
   const FLOAT clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
   g_pDeviceContext->ClearRenderTargetView(g_pRTView, clearColor);
 }
 
-void RenderD3D11::draw() {
+void RenderD3D11::Draw() {
   SetViewPort();
   g_pDeviceContext->OMSetRenderTargets(1, &g_pRTView, NULL);
   UINT stride = sizeof(VERTEX);
@@ -282,7 +288,7 @@ void RenderD3D11::draw() {
   g_pSwapChain->Present(0, 0);
 }
 
-int RenderD3D11::release() {
+int RenderD3D11::Release() {
   DiscardGraphicsResources();
   return 1;
 }

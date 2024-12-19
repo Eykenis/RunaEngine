@@ -10,7 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Dungeon_Aiz_diff.tga
+map_Kd D:/Github Repo/RunaEngine/assets/models/Aiz.png
 
 newmtl Dungeon_Aiz_Hair
 Ns 143.999983

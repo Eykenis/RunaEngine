@@ -8,6 +8,7 @@ void check(MeshNode* node, int rnk) {
   std::cout << "mesh count: " << node->meshes.size() << std::endl;
   for (uint32_t i = 0; i < node->meshes.size(); ++i) {
     std::cout <<  "face count of the " << i + 1 << "th mesh: "<< node->meshes[i].Face.size() << std::endl;
+    std::cout <<  "vertex count of the " << i + 1 << "th mesh: "<< node->meshes[i].Position.size() << std::endl;
   }
   for (auto &x : node->children) {
     check(x, rnk + 1);

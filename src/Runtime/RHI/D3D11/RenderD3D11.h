@@ -1,3 +1,9 @@
+/***
+
+Deprecated
+
+***/
+
 #pragma once
 #include "../RenderModule.h"
 
@@ -24,10 +30,10 @@ using namespace DirectX::PackedVector;
 
 class RenderD3D11 : public RenderModule {
 public:
-  virtual int init();
-  virtual int release();
-  virtual void clear();
-  virtual void draw();
+  virtual int Init();
+  virtual int Release();
+  virtual void Clear();
+  virtual void Draw();
   virtual ~RenderD3D11();
 
   void getHwnd(HWND hwnd);

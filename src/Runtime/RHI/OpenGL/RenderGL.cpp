@@ -1,3 +1,9 @@
+/***
+
+Deprecated
+
+***/
+
 #include "RenderGL.h"
 
 const uint32_t SCREEN_WIDTH = 640;
@@ -45,7 +51,7 @@ void RenderGL::getHwnd(HWND hwnd) {
   m_hwnd = hwnd;
 }
 
-int RenderGL::init() {
+int RenderGL::Init() {
   m_hdc = GetDC(m_hwnd);
   PIXELFORMATDESCRIPTOR pfd = {
     sizeof(PIXELFORMATDESCRIPTOR),
@@ -77,8 +83,6 @@ int RenderGL::init() {
   }
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
   vertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
   glCompileShader(vertexShader);
@@ -108,19 +112,19 @@ int RenderGL::init() {
   return 1;
 }
 
-void RenderGL::clear() {
+void RenderGL::Clear() {
   glClearColor(0.0f, 0.2f, 0.4f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void RenderGL::draw() {
+void RenderGL::Draw() {
   glUseProgram(shaderProgram);
   glBindVertexArray(VAO);
   glDrawArrays(GL_TRIANGLES, 0, 3);
   SwapBuffers(m_hdc);
 }
 
-int RenderGL::release() {
+int RenderGL::Release() {
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   glDeleteProgram(shaderProgram);
@@ -129,4 +133,5 @@ int RenderGL::release() {
   wglMakeCurrent(NULL, NULL);
   wglDeleteContext(m_hrc);
   ReleaseDC(m_hwnd, m_hdc);
+  return 1;
 }

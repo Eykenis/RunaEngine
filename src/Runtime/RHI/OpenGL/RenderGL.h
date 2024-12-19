@@ -1,3 +1,9 @@
+/***
+
+Deprecated
+
+***/
+
 #pragma once
 
 #include "../RenderModule.h"
@@ -9,10 +15,10 @@
 
 class RenderGL : public RenderModule {
 public:
-  virtual int init();
-  virtual int release();
-  virtual void clear();
-  virtual void draw();
+  virtual int Init();
+  virtual int Release();
+  virtual void Clear();
+  virtual void Draw();
   virtual ~RenderGL();
 
   void getHwnd(HWND hwnd);

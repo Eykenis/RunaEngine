@@ -1,0 +1,1 @@
+cmake -G "MinGW Makefiles" -DCMAKE_C_COMPILER="D:/dev/LLVM/bin/clang.exe" -DCMAKE_CXX_COMPILER="D:/dev/LLVM/bin/clang++.exe" ..

@@ -51,6 +51,11 @@ public:
     return t;
   }
 
+  template<typename T>
+  uint32_t GetComponentCount() {
+    return Componentss[typeid(T).name()].size();
+  }
+
   // get/remove components
   template<typename T>
   std::enable_if_t<std::is_base_of<Component, T>::value, Component*>
