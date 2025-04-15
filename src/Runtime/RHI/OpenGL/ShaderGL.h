@@ -6,5 +6,6 @@ class ShaderGL : public ShaderModule {
     virtual ~ShaderGL();
     virtual int Init(const char* vs, const char* fs);
     virtual void Use();
+    virtual void setMat4(const std::string &name, const Eigen::Matrix4f &mat);
     uint32_t m_vertexShader, m_fragmentShader, m_shaderProgram;
 };

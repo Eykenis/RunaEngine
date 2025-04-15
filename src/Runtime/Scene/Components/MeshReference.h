@@ -9,6 +9,7 @@ class Mesh;
 
 struct MeshNode {
   std::vector<Mesh> meshes;
+  std::vector<int> renderableIdx; // for picking renderable
   std::list<MeshNode*> children;
 };
 

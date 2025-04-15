@@ -16,7 +16,10 @@ public:
   void DestroyForm() override;
   void LoadScene(std::string_view scene_path) override;
   int DisplayFrame(unsigned char* buffer = 0) override;
+  void ClearFrame() override;
+  HWND getHwnd();
 private:
+  uint16_t rhi_type;
   WNDCLASSEX wc;
   HWND h_window;
   MSG msg;

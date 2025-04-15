@@ -4,10 +4,14 @@
 #include <cstdint>
 #include <glad/glad.h>
 #include <memory>
+#include <vector>
 
 struct RenderableGL {
     std::vector<uint32_t> VBOs;
     std::vector<uint32_t> vsize;
+    Eigen::Matrix4f matModel; 
+    // std::vector<float> model;
+    uint32_t shader_idx;
     uint32_t tex;
     uint32_t isize;
     uint32_t EBO;
@@ -17,17 +21,24 @@ struct RenderableGL {
 class GraphicsManagerGL : public GraphicsManagerModule {
     public:
     virtual int Init(uint32_t width, uint32_t height);
-    virtual uint32_t CreateRenderable(Mesh* mesh);
+    virtual uint32_t CreateRenderable(Mesh* mesh, uint32_t shader_idx);
     virtual std::shared_ptr<VertexBufferModule> CreateVertexBuffer(void* data, uint32_t count, uint32_t vertex_size, uint32_t index);
     virtual std::shared_ptr<ShaderModule> CreateShader(const char* vs_path, const char* fs_path);
     virtual std::shared_ptr<TextureModule> CreateTexture2D(const char* tex_path);
     virtual std::shared_ptr<IndexBufferModule> CreateIndexBuffer(void* data, uint32_t count, uint32_t stride_size, uint32_t index);
+    virtual void ReleaseRenderable(uint32_t renderable_idx);
     virtual void Draw(uint32_t idx);
     virtual void DrawIndexed(uint32_t idx);
     virtual void DrawAll();
     virtual void ReleaseAll();
     virtual void Clear();
     virtual void UseShader(std::shared_ptr<ShaderModule> shader);
+    virtual void setMat4(uint32_t idx, Eigen::Matrix4f mat);
+    virtual void setView(Eigen::Matrix4f);
+    virtual void setPerspective(Eigen::Matrix4f);
     private:
+    std::vector<bool> renderable_active;
     std::vector<RenderableGL> renderable;
+    std::vector<std::shared_ptr<ShaderModule>> shaders;
+    Eigen::Matrix4f view, perspective, viewport;
 };

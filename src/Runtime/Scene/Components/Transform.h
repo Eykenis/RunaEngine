@@ -13,9 +13,18 @@ public:
     { }
   virtual ~Transform() { }
 
-  Eigen::Vector3f& position();
-  Eigen::Vector3f& rotation();
-  Eigen::Vector3f& scale();
+  Eigen::Vector3f& position() {
+    return _Position;
+  }
+
+  Eigen::Vector3f& rotation() {
+      return _Rotation;
+  }
+
+  Eigen::Vector3f& scale() {
+      return _Scale;
+  }
+  
 private:
   Eigen::Vector3f _Position;
   Eigen::Vector3f _Rotation;

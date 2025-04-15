@@ -1,23 +1,33 @@
 #include "GraphicsManagerGL.h"
 #include "../../AssetsImport/ImageImporter.h"
+#include "ShaderGL.h"
 #include "IndexBufferGL.h"
-#include "KHR/khrplatform.h"
 #include "ShaderGL.h"
 #include "VertexBufferGL.h"
 #include "TextureGL.h"
 #include "../../AssetsImport/AssetsManager.h"
+#include "../ShaderModule.h"
 #include <cstdint>
 #include <fstream>
 #include <memory>
+// #include <new>
 #include <sstream>
 
 
 int GraphicsManagerGL::Init(uint32_t width, uint32_t height) {
     int ret = gladLoadGL();
     if (!ret) return 0;
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(0, 0, width, height);
     glViewport(0, 0, width, height);
     glClearColor(0, 0.2f, 0.4f, 1.0f);
     glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_MULTISAMPLE);
+    this->viewport << 0 - width, 0, 0, -width,
+                      0, 0 - height, 0, -height,
+                      0, 0, 1, -1,
+                      0, 0, 0, 1;
+
     return ret;
 }
 
@@ -44,8 +54,10 @@ std::shared_ptr<ShaderModule> GraphicsManagerGL::CreateShader(const char* vs_pat
     ss.clear();
     is.close();
     if(ret->Init(vs.c_str(), fs.c_str())) {
+        shaders.push_back(ret);
         return ret;
     }
+    shaders.push_back(ret);
     return nullptr;
 }
 
@@ -59,10 +71,29 @@ std::shared_ptr<VertexBufferModule> GraphicsManagerGL::CreateVertexBuffer(void* 
 }
 
 void GraphicsManagerGL::Clear() {
+    glDisable(GL_SCISSOR_TEST);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_SCISSOR_TEST);
+
+    glClearColor(0, 0.2f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 }
 
-uint32_t GraphicsManagerGL::CreateRenderable(Mesh* mesh) {
+void GraphicsManagerGL::setMat4(uint32_t idx, Eigen::Matrix4f mat) {
+    if (idx >= this->renderable.size()) return;
+    renderable[idx].matModel = mat; // Only model mat need modification. As view mat & perspective mat all comes from the camera.
+}
+
+void GraphicsManagerGL::setView(Eigen::Matrix4f mat) {
+    this->view = mat;
+}
+
+void GraphicsManagerGL::setPerspective(Eigen::Matrix4f mat) {
+    this->perspective = mat;
+}
+
+uint32_t GraphicsManagerGL::CreateRenderable(Mesh* mesh, uint32_t shader_idx) {
     RenderableGL ret;
     glGenVertexArrays(1, &ret.VAO);
     glBindVertexArray(ret.VAO);
@@ -70,7 +101,7 @@ uint32_t GraphicsManagerGL::CreateRenderable(Mesh* mesh) {
     auto pos = CreateVertexBuffer(mesh->Position.data(), mesh->Position.size() * sizeof(float), 3 * sizeof(float), 0);
     auto normal = CreateVertexBuffer(mesh->Normal.data(), mesh->Normal.size() * sizeof(float), 3 * sizeof(float), 1);
     auto texcoord = CreateVertexBuffer(mesh->TexCoord[0].data(), mesh->TexCoord[0].size() * sizeof(float), sizeof(float) * 3, 2);
-    // printf("%s\n", mesh->material.diffuse[0].path.c_str());
+    
     if (!mesh->material.diffuse.empty()) {
         auto tex = CreateTexture2D(mesh->material.diffuse[0].path.c_str());
         ret.tex = tex.get()->getIndex();
@@ -79,16 +110,38 @@ uint32_t GraphicsManagerGL::CreateRenderable(Mesh* mesh) {
         auto tex = CreateTexture2D("D:/Github Repo/RunaEngine/assets/models/empty.png");
         ret.tex = tex.get()->getIndex();
     }
-
+    ret.shader_idx = shader_idx;
     ret.EBO = face.get()->getIndex();
     ret.VBOs.push_back(pos.get()->getVertices());
     ret.VBOs.push_back(normal.get()->getVertices());
     ret.VBOs.push_back(texcoord.get()->getVertices());
     ret.vsize.push_back(mesh->Position.size());
     ret.isize = mesh->Face.size();
-    renderable.push_back(ret);
     glBindVertexArray(0);
+
+    // renderable.emplace_back(ret);
+    // seek a position
+    uint32_t renderable_size = renderable.size();
+    for (int i = 0; i < renderable_size; ++i) {
+        if (renderable_active[i]) continue;
+        renderable_active[i] = true;
+        renderable[i] = ret;
+        return i;
+    }
+    
+    renderable_active.emplace_back(true);
+    renderable.emplace_back(ret);
     return renderable.size() - 1;
+}
+
+void GraphicsManagerGL::ReleaseRenderable(uint32_t renderable_idx) {
+    if (renderable_idx < renderable.size()) {
+        glBindVertexArray(0);
+        renderable_active[renderable_idx] = false;
+        for (auto y : renderable[renderable_idx].VBOs) glDeleteBuffers(1, &y);
+        glDeleteBuffers(1, &renderable[renderable_idx].EBO);
+        glDeleteBuffers(1, &renderable[renderable_idx].VAO);
+    }
 }
 
 std::shared_ptr<IndexBufferModule> GraphicsManagerGL::CreateIndexBuffer(void* data, uint32_t count, uint32_t stride_size, uint32_t index) {
@@ -128,11 +181,6 @@ void GraphicsManagerGL::Draw(uint32_t idx) {
 }
 
 void GraphicsManagerGL::DrawIndexed(uint32_t idx) {
-    // glClear(GL_COLOR_BUFFER_BIT);
-    // glBindVertexArray(renderable[idx].VAO);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idx.get()->getIndex());
-    // glDrawElements(GL_TRIANGLES, buffersize, GL_UNSIGNED_INT, 0);
-    // glBindVertexArray(0);
     if (idx >= renderable.size()) {
         std::cerr << "Illegal render index!" << std::endl;
         return;
@@ -149,6 +197,17 @@ void GraphicsManagerGL::DrawIndexed(uint32_t idx) {
 void GraphicsManagerGL::DrawAll() {
     uint32_t n = renderable.size();
     for (int i = 0; i < n; ++i) {
+        if (renderable_active[i] == false) {
+            continue;
+        }
+        auto shader = shaders[renderable[i].shader_idx];
+        UseShader(shader);
+        // update MVP
+        // std::cout << view.matrix() << std::endl;
+        // std::cout << perspective.matrix() << std::endl;
+        shader->setMat4("model", renderable[i].matModel);
+        shader->setMat4("view", view);
+        shader->setMat4("perspective", perspective);
         if (renderable[i].tex) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, renderable[i].tex);

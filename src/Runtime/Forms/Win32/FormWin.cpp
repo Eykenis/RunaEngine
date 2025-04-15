@@ -2,9 +2,14 @@
 #include "../../RHI/D3D11/RenderD3D11.h"
 #include "../../RHI/OpenGL/RenderGL.h"
 #include "../../RHI/OpenGL/GraphicsManagerGL.h"
+#include "../imgui/backends/imgui_impl_win32.h"
+#include "../Form.h"
 #include <cstddef>
 #include <libloaderapi.h>
+#include <wingdi.h>
 #include <winuser.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 HDC m_hdc;
 
@@ -14,6 +19,10 @@ LRESULT CALLBACK myWndProc(
   WPARAM wparam,
   LPARAM lparam
 );
+
+HWND FormWin::getHwnd() {
+  return h_window;
+}
 
 void FormWin::InitForm(int formWidth, int formHeight, std::string title, int rhi) {
 
@@ -55,7 +64,7 @@ void FormWin::InitForm(int formWidth, int formHeight, std::string title, int rhi
                             0, 0, formWidth, formHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
   assert(h_window != NULL);
 
-  ShowWindow(h_window, SW_SHOW);
+  rhi_type = rhi;
 
   if (rhi == FORM_RHI_OPENGL) {
     m_hdc = GetDC(h_window);
@@ -88,6 +97,9 @@ void FormWin::InitForm(int formWidth, int formHeight, std::string title, int rhi
     std::cout << "Form Init Failed: Illegal Render API" << std::endl;
     return;
   }
+
+  ShowWindow(h_window, SW_SHOW);
+  UpdateWindow(h_window);
   
   return;
 }
@@ -96,16 +108,25 @@ void FormWin::DestroyForm() {
 
 }
 
+void FormWin::ClearFrame() {
+  if (rhi_type == FORM_RHI_OPENGL) {
+    glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT); 
+  }
+}
+
 int FormWin::DisplayFrame(unsigned char* buffer) {
   if (!buffer) {
     if (GetMessage(&msg, NULL, 0, 0)) {
+      // transport to ImGui
+      if (ImGui_ImplWin32_WndProcHandler(h_window, msg.message, msg.wParam, msg.lParam)) {
+
+      }
       if (msg.message == WM_QUIT) return 0;
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
-    return 1;
   }
-  return 0;
+  return 1;
 }
 
 void FormWin::LoadScene(std::string_view scene_path) {

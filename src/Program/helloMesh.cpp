@@ -6,10 +6,12 @@
 #include "../Runtime/Scene/Mesh.h"
 #include "src/Runtime/AssetsImport/MeshImporter.h"
 #include "src/Runtime/Scene/Components/MeshReference.h"
+#include "src/Runtime/Scene/Components/ShaderReference.h"
 #include <iostream>
 
-uint32_t fH = 720;
+uint32_t fH = 1280;
 uint32_t fW = 720;
+uint32_t gH = 800, gW = 600;
 int main()
 {
   // freopen("out.txt", "w", stdout);
@@ -18,12 +20,21 @@ int main()
     int api; std::cin >> api;
     form->InitForm(fH, fW, "Runa Engine", api);
     GameObject* RootObject = new GameObject;
-    SceneManager* scene = new SceneManager(RootObject, 720, 720);
-    auto m_shader = scene->graphics_manager->CreateShader("D:/Github Repo/RunaEngine/assets/shaders/shader.vs", "D:/Github Repo/RunaEngine/assets/shaders/shader.ps");
-    scene->graphics_manager->UseShader(m_shader);
+    SceneManager* scene = new SceneManager(RootObject, gH, gW);
 
     RootObject->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/Aiz.obj"));
-    // thisMesh = RootObject->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/african_head.obj"));
+    RootObject->AddComponent<ShaderReference>();
+
+    // GameObject* African = new GameObject;
+    // African->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/african_head.obj"));
+    // African->AddComponent<ShaderReference>();
+
+    // scene->AddNewGameObject(African);
+
+    GameObject* cam = new Camera(0, 0, 1.0f, 0, 1, 2.0f);
+    
+    scene->AddNewGameObject(cam);
+    scene->SetMainCamera((Camera*)cam);
 
     scene->InitSceneRenderable();
     while (form->DisplayFrame(0)) { 

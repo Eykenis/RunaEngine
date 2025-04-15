@@ -13,7 +13,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
-project(RunaEngine)
+project(RunaEngine_TEST)
 
 add_definitions(-D_DEBUG)
 
@@ -33,7 +33,7 @@ add_library(assimp STATIC IMPORTED)
 set_target_properties(assimp PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/lib/assimp-vc143-mt.lib)
 
 # add_executable(${PROJECT_NAME} src/Program/mesh.cpp src/Program/glad.c)
-add_executable(${PROJECT_NAME} src/Program/helloMesh.cpp src/Program/glad.c)
+add_executable(${PROJECT_NAME} src/Program/helloImGUI.cpp src/Program/glad.c)
 
 target_link_libraries(${PROJECT_NAME}
   d3d11.lib dxgi.lib kernel32.lib user32.lib d3dcompiler.lib dxguid.lib
