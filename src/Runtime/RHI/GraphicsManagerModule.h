@@ -7,6 +7,7 @@
 #include "VertexBufferModule.h"
 #include "ShaderModule.h"
 #include "../Scene/Mesh.h"
+#include "../../Runtime/Core/eigen-3.4.0/Eigen/src/Core/Matrix.h"
 #include <memory>
 
 enum GraphicsAPI{
@@ -31,6 +32,8 @@ class GraphicsManagerModule {
     virtual void Clear() = 0;
     virtual void UseShader(std::shared_ptr<ShaderModule> shader) = 0;
     virtual void setMat4(uint32_t idx, Eigen::Matrix4f mat) = 0;
+    virtual void setGlobalMat4(const std::string& name, Eigen::Matrix4f mat) = 0;
+    virtual void setGlobalVec3(const std::string& name, Eigen::Vector3f vec) = 0;
     virtual void setView(Eigen::Matrix4f) = 0;
     virtual void setPerspective(Eigen::Matrix4f) = 0;
 };

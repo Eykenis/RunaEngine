@@ -15,7 +15,7 @@ public:
   void InitForm(int formWidth, int formHeight, std::string title, int rhi) override;
   void DestroyForm() override;
   void LoadScene(std::string_view scene_path) override;
-  int DisplayFrame(unsigned char* buffer = 0) override;
+  int DisplayFrame() override;
   void ClearFrame() override;
   HWND getHwnd();
 private:

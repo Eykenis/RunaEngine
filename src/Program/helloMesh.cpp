@@ -31,13 +31,13 @@ int main()
 
     // scene->AddNewGameObject(African);
 
-    GameObject* cam = new Camera(0, 0, 1.0f, 0, 1, 2.0f);
+    GameObject* cam = new Camera(0, 0, -1.0f, 0, 1, 2.0f, 90.0f);
     
     scene->AddNewGameObject(cam);
     scene->SetMainCamera((Camera*)cam);
 
     scene->InitSceneRenderable();
-    while (form->DisplayFrame(0)) { 
+    while (form->DisplayFrame()) { 
       scene->RenderScene();
     }
   return 0;

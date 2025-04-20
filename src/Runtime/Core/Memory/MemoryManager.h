@@ -6,26 +6,31 @@ private:
   void* Allocate(uint32_t size);
   void Free(void* p, uint32_t size);
   MemoryManager();
+  static MemoryManager manager;
 public:
   virtual ~MemoryManager();
   template <typename T>
-  T* New() {
-    return new(Allocate(sizeof(T))) T();
+  static T* New() {
+    return new(manager.Allocate(sizeof(T))) T();
+  }
+
+  template <typename T, typename... Args>
+  static T* New(Args&&... args) {
+    return new(manager.Allocate(sizeof(T))) T(std::forward<Args>(args)...);
   }
   
   template <typename T>
-  T* New(T t) {
-    return new(Allocate(sizeof(T))) T(t);
+  static T* New(T t) {
+    return new(manager.Allocate(sizeof(T))) T(t);
   }
 
   template <typename T>
-  void Delete(T* p) {
+  static void Delete(T* p) {
     reinterpret_cast<T*>(p)->~T();
-    Free(p, sizeof(T));
+    manager.Free(p, sizeof(T));
   }
 
   static MemoryManager* GetInstance() {
-    static MemoryManager manager;
     return &manager;
   }
 };

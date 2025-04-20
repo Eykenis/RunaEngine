@@ -5,22 +5,6 @@
 #include "Components/Transform.h"
 #include <crossguid/guid.hpp>
 
-// class GameObject : public BaseObject {
-// private:
-//   GameObject* ParentGameObject;
-//   std::list<GameObject*> ChildGameObjects;
-//   std::list<Component*> Components;
-//   std::unordered_map<std::string, std::list<Component*>> Componentss;
-// protected:
-//   void AppendChild(GameObject* subObject) {
-//     ChildGameObjects.push_back(subObject);
-//     subObject->ParentGameObject = this;
-//   }
-// public:
-//   GameObject();
-//   ~GameObject() { }
-// };
-
 class Camera : public GameObject {
 private:
 public:

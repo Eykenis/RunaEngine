@@ -5,12 +5,15 @@
 #include "Components/ShaderReference.h"
 #include "Camera.h"
 #include "../RHI/ShaderModule.h"
+#include "LightSource.h"
 #include <cstdint>
+#include <vector>
 
 class SceneManager {
 private:
   GameObject* HierachyRoot;
   Camera* MainCamera;
+  std::vector<LightSource*> lightSource;
   void InitSingleMeshRenderable(MeshNode* current, uint32_t shader_idx);
   void SeekEveryShaderReference(GameObject* current);
   void ClearSingleSceneRenderable(GameObject* current);
@@ -22,6 +25,7 @@ public:
   }
   void Destroy(GameObject* gameObjectToDestroy);
   void AddNewGameObject(GameObject* newGameObject, GameObject* parentGameObject = nullptr);
+  void AddLightSource(LightSource* lightSource);
   ~SceneManager();
   void SaveScene();
   // reset all MVP matrix

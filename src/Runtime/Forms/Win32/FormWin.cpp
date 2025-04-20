@@ -114,17 +114,14 @@ void FormWin::ClearFrame() {
   }
 }
 
-int FormWin::DisplayFrame(unsigned char* buffer) {
-  if (!buffer) {
-    if (GetMessage(&msg, NULL, 0, 0)) {
-      // transport to ImGui
-      if (ImGui_ImplWin32_WndProcHandler(h_window, msg.message, msg.wParam, msg.lParam)) {
-
-      }
-      if (msg.message == WM_QUIT) return 0;
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
+int FormWin::DisplayFrame() {
+  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+    // transport to ImGui
+    if (ImGui_ImplWin32_WndProcHandler(h_window, msg.message, msg.wParam, msg.lParam)) {
+      return 1;
     }
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
   }
   return 1;
 }

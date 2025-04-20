@@ -43,6 +43,10 @@ void ShaderGL::setMat4(const std::string &name, const Eigen::Matrix4f &mat) {
     glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, name.c_str()), 1, GL_FALSE, mat.data());
 }
 
+void ShaderGL::setVec3(const std::string &name, const Eigen::Vector3f &vec) {
+    glUniform3f(glGetUniformLocation(m_shaderProgram, name.c_str()), vec.x(), vec.y(), vec.z());
+}
+
 ShaderGL::~ShaderGL() {
 
 }

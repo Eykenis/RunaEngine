@@ -22,6 +22,11 @@ int GraphicsManagerGL::Init(uint32_t width, uint32_t height) {
     glViewport(0, 0, width, height);
     glClearColor(0, 0.2f, 0.4f, 1.0f);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // 标准透明混合
     // glEnable(GL_MULTISAMPLE);
     this->viewport << 0 - width, 0, 0, -width,
                       0, 0 - height, 0, -height,
@@ -83,6 +88,18 @@ void GraphicsManagerGL::Clear() {
 void GraphicsManagerGL::setMat4(uint32_t idx, Eigen::Matrix4f mat) {
     if (idx >= this->renderable.size()) return;
     renderable[idx].matModel = mat; // Only model mat need modification. As view mat & perspective mat all comes from the camera.
+}
+
+void GraphicsManagerGL::setGlobalMat4(const std::string& name, Eigen::Matrix4f mat) {
+    for (auto x : shaders) {
+        x->setMat4(name, mat);
+    }
+}
+
+void GraphicsManagerGL::setGlobalVec3(const std::string& name, Eigen::Vector3f vec) {
+    for (auto x : shaders) {
+        x->setVec3(name, vec);
+    }
 }
 
 void GraphicsManagerGL::setView(Eigen::Matrix4f mat) {
@@ -185,6 +202,11 @@ void GraphicsManagerGL::DrawIndexed(uint32_t idx) {
         std::cerr << "Illegal render index!" << std::endl;
         return;
     }
+    auto shader = shaders[renderable[idx].shader_idx];
+    UseShader(shader);
+    shader->setMat4("model", renderable[idx].matModel);
+    shader->setMat4("view", view);
+    shader->setMat4("perspective", perspective);
     auto ret = renderable[idx];
     
     glBindVertexArray(renderable[idx].VAO);

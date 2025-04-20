@@ -1,8 +1,8 @@
 #pragma once
 #include "../Component.h"
 #include "../../Core/eigen-3.4.0/Eigen/Eigen"
-#define DEFAULT_VSHADER_PATH "D:/Github Repo/RunaEngine/assets/shaders/default_shader.vs"
-#define DEFAULT_FSHADER_PATH "D:/Github Repo/RunaEngine/assets/shaders/default_shader.ps"
+#define DEFAULT_VSHADER_PATH "../assets/shaders/default_shader.vs"
+#define DEFAULT_FSHADER_PATH "../assets/shaders/default_shader.ps"
 
 class ShaderReference : public Component {
 public:

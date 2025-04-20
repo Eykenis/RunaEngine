@@ -8,24 +8,26 @@
 #include "../Runtime/Scene/SceneManager.h"
 #include "../Runtime/Scene/Mesh.h"
 #include "src/Runtime/AssetsImport/MeshImporter.h"
+#include "src/Runtime/Core/Memory/MemoryManager.h"
 #include "src/Runtime/Scene/Components/MeshReference.h"
 #include "src/Runtime/Scene/Components/ShaderReference.h"
 #include "src/Runtime/Scene/Components/Transform.h"
+#include "src/Runtime/Scene/PointLightSource.h"
 #include <ctime>
 #include <sysinfoapi.h>
 
 
-uint32_t fW = 1280;
-uint32_t fH = 720;
-uint32_t gW = 800, gH = 600;
+uint32_t fW = 1600;
+uint32_t fH = 900;
+uint32_t gW = 1280, gH = 720;
 
-const uint32_t FPS = 60;
+// const uint32_t frametime = 2;
 
 std::string model_path[] = {"../assets/models/Aiz.obj", "../assets/models/african_head.obj"};
 
 int main()
 {
-  FormWin* form = dynamic_cast<FormWin*>(MemoryManager::GetInstance()->New<FormWin>());
+  FormWin* form = MemoryManager::New<FormWin>();
   form->InitForm(fW, fH, "Runa Engine", FORM_RHI_OPENGL);
 
   IMGUI_CHECKVERSION();
@@ -40,26 +42,34 @@ int main()
   ImGui_ImplWin32_InitForOpenGL(form->getHwnd());
   ImGui_ImplOpenGL3_Init();
 
-  GameObject* RootObject = new GameObject;
-  SceneManager* scene = new SceneManager(RootObject, gW, gH);
+  GameObject* RootObject = MemoryManager::New<GameObject>();
+  SceneManager* scene = MemoryManager::New<SceneManager>(RootObject, gW, gH);
 
-  GameObject* go = new GameObject;
+  GameObject* go = MemoryManager::New<GameObject>();
   scene->AddNewGameObject(go);
-  go->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/Aiz.obj"));
-  go->AddComponent<ShaderReference>();
-
   uint32_t model_idx = 0;
 
-  GameObject* cam = new Camera(0, 0, -1.0f, 0, 0, 2.0f, 90.0f);
+  go->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
+  go->AddComponent<ShaderReference>();
+
+  GameObject* grid = MemoryManager::New<GameObject>();
+  scene->AddNewGameObject(grid);
+  grid->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/test.obj"));
+  grid->AddComponent<ShaderReference>(MemoryManager::New<ShaderReference>("../assets/shaders/gridshader.vs", "../assets/shaders/gridshader.ps"));
+
+  GameObject* cam = MemoryManager::New<Camera>(0, 0, -1.0f, 0, 1.0f, 2.0f, 90.0f);
   ((Camera*)cam)->aspect = 1.0f * gW / gH;
   scene->AddNewGameObject(cam);
   scene->SetMainCamera((Camera*)cam);
+
+  LightSource* ls = MemoryManager::New<PointLightSource>(1.0f, Eigen::Vector3f(0.3f, 0.0f, -0.6f));
+  scene->AddLightSource(ls);
   scene->InitSceneRenderable();
 
   ImVec2 window_pos(gW, 0);
   auto t1 = clock();
 
-  while (form->DisplayFrame(0)) {
+  while (form->DisplayFrame()) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -67,9 +77,6 @@ int main()
     ImGui::SetNextWindowSize(ImVec2(fW - gW, fW - 20));
     {
           auto t2 = clock();
-          // if (t2 - t1 < 1.0 * CLOCKS_PER_SEC / FPS) {
-          //   Sleep(1.0 * CLOCKS_PER_SEC / FPS - t2 + t1);
-          // }
           auto delta_time = 1.0f * (t2 - t1) / CLOCKS_PER_SEC;
           t1 = t2;
           static float f = 0.0f;
@@ -81,36 +88,42 @@ int main()
             scene->Destroy(go);
             model_idx ^= 1;
 
-            auto gos = new GameObject;
+            auto gos = MemoryManager::New<GameObject>();
             gos->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
             gos->AddComponent<ShaderReference>();
+            // if (model_idx != 1)
+            //   gos->AddComponent<ShaderReference>();
+            // else
+            //   gos->AddComponent<ShaderReference>(new ShaderReference("../assets/shaders/gridshader.vs", "../assets/shaders/gridshader.ps"));
             scene->AddNewGameObject(gos);
             scene->InitSingleSceneRenderable(gos);
             go = gos;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_W)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() += dynamic_cast<Camera*>(cam)->camDirection * delta_time * 5.0f;
+          auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
+          auto tfgo = dynamic_cast<Transform*>(go->GetComponent<Transform>());
+          if (ImGui::IsKeyDown(ImGuiKey_W)) {
+            tf->position() += dynamic_cast<Camera*>(cam)->camDirection * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_S)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() -= dynamic_cast<Camera*>(cam)->camDirection * delta_time * 5.0f;
+          if (ImGui::IsKeyDown(ImGuiKey_S)) {
+            tf->position() -= dynamic_cast<Camera*>(cam)->camDirection * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_A)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() -= dynamic_cast<Camera*>(cam)->camRight() * delta_time * 5.0f;
+          if (ImGui::IsKeyDown(ImGuiKey_A)) {
+            tf->position() -= dynamic_cast<Camera*>(cam)->camRight() * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_D)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() += dynamic_cast<Camera*>(cam)->camRight() * delta_time * 5.0f;
+          if (ImGui::IsKeyDown(ImGuiKey_D)) {
+            tf->position() += dynamic_cast<Camera*>(cam)->camRight() * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() += dynamic_cast<Camera*>(cam)->camUp * delta_time * 5.0f;
+          if (ImGui::IsKeyDown(ImGuiKey_Space)) {
+            tf->position() += dynamic_cast<Camera*>(cam)->camUp * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyPressed(ImGuiKey_LeftShift)) {
-            auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-            tf->position() -= dynamic_cast<Camera*>(cam)->camUp * delta_time * 5.0f;
+          if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+            tf->position() -= dynamic_cast<Camera*>(cam)->camUp * delta_time * 3.0f;
+          }
+          if (ImGui::IsKeyDown(ImGuiKey_Q)) {
+            tfgo->rotation().y() += delta_time * 3.0f;
+          }
+          if (ImGui::IsKeyDown(ImGuiKey_E)) {
+            tfgo->rotation().y() -= delta_time * 3.0f;
           }
 
           ImGui::SameLine();
@@ -130,7 +143,6 @@ int main()
       ImGui::SetNextWindowSize(ImVec2(gW, fH - gH));
       {
         ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        ImGui::Text("%f", ImGui::GetWindowHeight());
         ImGui::End();
       }
     ImGui::Render();

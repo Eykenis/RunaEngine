@@ -34,6 +34,8 @@ class GraphicsManagerGL : public GraphicsManagerModule {
     virtual void Clear();
     virtual void UseShader(std::shared_ptr<ShaderModule> shader);
     virtual void setMat4(uint32_t idx, Eigen::Matrix4f mat);
+    virtual void setGlobalMat4(const std::string& name, Eigen::Matrix4f mat);
+    virtual void setGlobalVec3(const std::string& name, Eigen::Vector3f vec);
     virtual void setView(Eigen::Matrix4f);
     virtual void setPerspective(Eigen::Matrix4f);
     private:

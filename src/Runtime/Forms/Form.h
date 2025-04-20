@@ -9,7 +9,7 @@ public:
   virtual void InitForm(int formWidth, int formHeight, std::string title, int rhi = 1) = 0;
   virtual void DestroyForm() = 0;
   virtual void LoadScene(std::string_view scene_path) = 0;
-  virtual int DisplayFrame(unsigned char* buffer) = 0;
+  virtual int DisplayFrame() = 0;
   virtual void ClearFrame() = 0;
   GraphicsManagerModule* m_graphics_manager;
 };

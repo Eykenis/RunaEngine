@@ -7,6 +7,7 @@
 // #include "src/Runtime/Scene/Component.h"
 #include "../Scene/Components/Transform.h"
 #include "../Core/eigen-3.4.0/Eigen/src/Geometry/AngleAxis.h"
+#include "../Scene/PointLightSource.h"
 #include <cstdint>
 
 void SceneManager::Destroy(GameObject* gameObjectToDestroy) {
@@ -32,8 +33,8 @@ void SceneManager::Destroy(GameObject* gameObjectToDestroy) {
     }
   }
   // release memory
-  // MemoryManager::GetInstance()->Delete(&gameObjectToDestroy);
-  delete gameObjectToDestroy;
+  MemoryManager::GetInstance()->Delete(&gameObjectToDestroy);
+  // delete gameObjectToDestroy;
 }
 
 void SceneManager::ReleaseSingleMeshRenderable(MeshNode* current) {
@@ -105,6 +106,7 @@ void SceneManager::ResetModelMatrix(GameObject* current) {
 }
 
 void SceneManager::ResetModelMatrixRecur(GameObject* current) {
+  graphics_manager->setGlobalVec3("lightPos", ((PointLightSource*)lightSource[0])->lightPosition);
   for (auto x : current->ChildGameObjects) {
     ResetModelMatrixRecur(x);
   }
@@ -197,6 +199,10 @@ void SceneManager::AddNewGameObject(GameObject* newGameObject, GameObject* paren
   if (parentGameObject == nullptr) parentGameObject = HierachyRoot;
   parentGameObject->ChildGameObjects.push_back(newGameObject);
   newGameObject->ParentGameObject = parentGameObject;
+}
+
+void SceneManager::AddLightSource(LightSource* lightSource) {
+  this->lightSource.push_back(lightSource);
 }
 
 void SceneManager::RenderScene() {
