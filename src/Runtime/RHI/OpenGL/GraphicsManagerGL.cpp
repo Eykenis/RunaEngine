@@ -92,12 +92,14 @@ void GraphicsManagerGL::setMat4(uint32_t idx, Eigen::Matrix4f mat) {
 
 void GraphicsManagerGL::setGlobalMat4(const std::string& name, Eigen::Matrix4f mat) {
     for (auto x : shaders) {
+        x->Use();
         x->setMat4(name, mat);
     }
 }
 
 void GraphicsManagerGL::setGlobalVec3(const std::string& name, Eigen::Vector3f vec) {
     for (auto x : shaders) {
+        x->Use();
         x->setVec3(name, vec);
     }
 }

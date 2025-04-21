@@ -9,6 +9,7 @@
 #include "../Runtime/Scene/Mesh.h"
 #include "src/Runtime/AssetsImport/MeshImporter.h"
 #include "src/Runtime/Core/Memory/MemoryManager.h"
+#include "src/Runtime/Core/eigen-3.4.0/Eigen/src/Geometry/Transform.h"
 #include "src/Runtime/Scene/Components/MeshReference.h"
 #include "src/Runtime/Scene/Components/ShaderReference.h"
 #include "src/Runtime/Scene/Components/Transform.h"
@@ -49,8 +50,8 @@ int main()
   scene->AddNewGameObject(go);
   uint32_t model_idx = 0;
 
-  go->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
-  go->AddComponent<ShaderReference>();
+  // go->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
+  // go->AddComponent<ShaderReference>();
 
   GameObject* grid = MemoryManager::New<GameObject>();
   scene->AddNewGameObject(grid);
@@ -62,11 +63,12 @@ int main()
   scene->AddNewGameObject(cam);
   scene->SetMainCamera((Camera*)cam);
 
-  LightSource* ls = MemoryManager::New<PointLightSource>(1.0f, Eigen::Vector3f(0.3f, 0.0f, -0.6f));
+  LightSource* ls = MemoryManager::New<PointLightSource>(1.0f, Eigen::Vector3f(3.0f, 0.0f, 3.0f));
   scene->AddLightSource(ls);
   scene->InitSceneRenderable();
 
   ImVec2 window_pos(gW, 0);
+  ImVec2 startMousePoint, endMousePoint;
   auto t1 = clock();
 
   while (form->DisplayFrame()) {
@@ -119,11 +121,13 @@ int main()
           if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
             tf->position() -= dynamic_cast<Camera*>(cam)->camUp * delta_time * 3.0f;
           }
-          if (ImGui::IsKeyDown(ImGuiKey_Q)) {
-            tfgo->rotation().y() += delta_time * 3.0f;
-          }
-          if (ImGui::IsKeyDown(ImGuiKey_E)) {
-            tfgo->rotation().y() -= delta_time * 3.0f;
+          if (tfgo) {
+            if (ImGui::IsKeyDown(ImGuiKey_Q)) {
+              tfgo->rotation().y() += delta_time * 3.0f;
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_E)) {
+              tfgo->rotation().y() -= delta_time * 3.0f;
+            }
           }
 
           ImGui::SameLine();
@@ -133,14 +137,28 @@ int main()
             
           }
           ImGui::SameLine();
-          ImGui::Text("Current Shader: \n%s", dynamic_cast<ShaderReference*>(go->GetComponent<ShaderReference>())->vpath.c_str());
+          // ImGui::Text("Current Shader: \n%s", dynamic_cast<ShaderReference*>(go->GetComponent<ShaderReference>())->vpath.c_str());
           
 
           ImGui::Text("Average FPS: %.1f", io.Framerate);
           ImGui::End();
       }
+      {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+          startMousePoint = ImGui::GetIO().MousePos;
+        }
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+          ImVec2 delta = ImVec2(ImGui::GetIO().MousePos.x - startMousePoint.x, ImGui::GetIO().MousePos.y - startMousePoint.y);
+          Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+          transform.translate(Eigen::Vector3f(-delta.x / 128 / 2 , delta.y / 72 / 2, 0.0f));
+
+          Transform* tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
+          tf->position() = (transform.matrix() * Eigen::Vector4f(tf->position().x(), tf->position().y(), tf->position().z(), 1.0f)).head<3>();
+          startMousePoint = ImGui::GetIO().MousePos;
+        }
+      }
       ImGui::SetNextWindowPos(ImVec2(0, 0));
-      ImGui::SetNextWindowSize(ImVec2(gW, fH - gH));
+      ImGui::SetNextWindowSize(ImVec2(gW, fH - gH - 40));
       {
         ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
         ImGui::End();

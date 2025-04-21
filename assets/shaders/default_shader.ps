@@ -1,7 +1,7 @@
 #version 330 core
 in vec3 normal;
 in vec2 texcoord;
-in vec3 worldPos;
+in vec4 worldPos;
 out vec4 FragColor;
 
 uniform sampler2D texture1;
@@ -9,7 +9,7 @@ uniform vec3 lightPos;
 
 void main()
 {
-    vec3 lightDir = normalize(worldPos - lightPos);
+    vec3 lightDir = normalize(lightPos - worldPos.xyz);
     float diff = max(dot(normal, lightDir), 0);
     vec4 texcolor = texture(texture1, texcoord);
     FragColor = vec4((diff * texcolor).xyz, 1.0f);
