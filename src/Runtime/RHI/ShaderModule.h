@@ -9,4 +9,5 @@ class ShaderModule {
     virtual void Use() = 0;
     virtual void setMat4(const std::string &name, const Eigen::Matrix4f &mat) = 0;
     virtual void setVec3(const std::string &name, const Eigen::Vector3f &vec) = 0;
+    virtual void setFloat(const std::string &name, const float value) = 0;
 };

@@ -13,5 +13,6 @@ public:
         return vpath == another.vpath && fpath == another.fpath;
     }
     std::string vpath, fpath;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ShaderReference, vpath, fpath)
 private:
 };

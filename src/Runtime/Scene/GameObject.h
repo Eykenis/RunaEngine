@@ -14,9 +14,9 @@
 
 class GameObject : public BaseObject {
 private:
+  std::string name; // name represented in editor
   GameObject* ParentGameObject;
   std::list<GameObject*> ChildGameObjects;
-  std::list<Component*> Components;
   std::unordered_map<std::string, std::list<Component*>> Componentss;
 protected:
   void AppendChild(GameObject* subObject) {
@@ -24,7 +24,7 @@ protected:
     subObject->ParentGameObject = this;
   }
 public:
-  GameObject();
+  GameObject(std::string_view names = "GameObject");
   ~GameObject() { }
 
   const xg::Guid& GetGUID() { return guid; }
@@ -74,10 +74,10 @@ public:
   std::enable_if_t<std::is_base_of<Component, T>::value, void>
   RemoveComponent(uint32_t index = 0) {
     uint32_t idx = 0;
-    for (auto it = Components.begin(); it != Components.end(); ++it) {
+    for (auto it = Componentss.begin(); it != Componentss.end(); ++it) {
       if (typeid(*it).name() == typeid(T).name()) {
         if (idx == index) {
-          Components.erase(it);
+          Componentss.erase(it);
           return;
         }
         idx++;

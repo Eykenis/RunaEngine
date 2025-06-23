@@ -1,6 +1,9 @@
 #include "MeshImporter.h"
+#include "assimp/material.h"
 #include "assimp/postprocess.h"
+#include "assimp/types.h"
 #include <cassert>
+#include <memory>
 
 std::vector<Texture> LoadTexture(aiMaterial* mat, aiTextureType type) {
   std::vector<Texture> textures;
@@ -12,6 +15,29 @@ std::vector<Texture> LoadTexture(aiMaterial* mat, aiTextureType type) {
     textures.emplace_back(tex);
   }
   return textures;
+}
+
+void LoadLightingParams(Material& targetMat, aiMaterial* mat) {
+  aiColor3D tmpVec;
+  mat->Get(AI_MATKEY_SHININESS, targetMat.Ns);
+  mat->Get(AI_MATKEY_REFRACTI, targetMat.Ni);
+  mat->Get(AI_MATKEY_OPACITY, targetMat.d);
+  mat->Get(AI_MATKEY_SHADING_MODEL, targetMat.illum);
+
+  if (mat->Get(AI_MATKEY_COLOR_AMBIENT, tmpVec) == AI_SUCCESS) {
+    targetMat.Ka = Eigen::Vector3f(tmpVec.r, tmpVec.g, tmpVec.b);
+  }
+  else targetMat.Ka = Eigen::Vector3f(1.0f, 1.0f, 1.0f);
+
+  if (mat->Get(AI_MATKEY_COLOR_SPECULAR, tmpVec) == AI_SUCCESS) {
+    targetMat.Ks = Eigen::Vector3f(tmpVec.r, tmpVec.g, tmpVec.b);
+  }
+  else targetMat.Ks = Eigen::Vector3f(1.0f, 1.0f, 1.0f);
+
+  if (mat->Get(AI_MATKEY_COLOR_DIFFUSE, tmpVec) == AI_SUCCESS) {
+    targetMat.Kd = Eigen::Vector3f(tmpVec.r, tmpVec.g, tmpVec.b);
+  }
+  else targetMat.Kd = Eigen::Vector3f(1.0f, 1.0f, 1.0f);
 }
 
 Mesh MeshImporter::ProcessMesh(aiMesh* mesh, const aiScene *scene) {
@@ -48,17 +74,18 @@ Mesh MeshImporter::ProcessMesh(aiMesh* mesh, const aiScene *scene) {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
     ret.material.diffuse = LoadTexture(material, aiTextureType_DIFFUSE);
     ret.material.normal = LoadTexture(material, aiTextureType_NORMALS);
+    LoadLightingParams(ret.material, material);
   }
   return ret;
 }
 
-void MeshImporter::ProcessNode(MeshNode* meshNode, aiNode* node, const aiScene* scene) {
+void MeshImporter::ProcessNode(std::shared_ptr<MeshNode> meshNode, aiNode* node, const aiScene* scene) {
   for (uint32_t i = 0; i < node->mNumMeshes; ++i) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
     meshNode->meshes.emplace_back(MeshImporter::ProcessMesh(mesh, scene));
   }
   for (uint32_t i = 0; i < node->mNumChildren; ++i) {
-    MeshNode* child = new MeshNode;
+    std::shared_ptr<MeshNode> child = std::make_shared<MeshNode>();
     meshNode->children.push_back(child);
     ProcessNode(child, node->mChildren[i], scene);
   }
@@ -72,7 +99,8 @@ MeshReference* MeshImporter::ReadMesh(const std::string& fileName) {
     return nullptr;
   }
   MeshReference* reference = new MeshReference;
-  reference->rootNode = new MeshNode;
+  reference->filepath = fileName;
+  reference->rootNode = std::make_shared<MeshNode>();
   ProcessNode(reference->rootNode, scene->mRootNode, scene);
   return reference;
 }

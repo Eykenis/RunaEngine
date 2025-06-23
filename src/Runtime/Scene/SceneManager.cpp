@@ -3,14 +3,16 @@
 #include "GameObject.h"
 #include "Components/ShaderReference.h"
 // #include "src/Runtime/Core/eigen-3.4.0/Eigen/src/Geometry/Rotation2D.h"
-#include "../Core/eigen-3.4.0/Eigen/src/Geometry/Transform.h"
 // #include "src/Runtime/Scene/Component.h"
 #include "../Scene/Components/Transform.h"
-#include "../Core/eigen-3.4.0/Eigen/src/Geometry/AngleAxis.h"
 #include "../Scene/PointLightSource.h"
+#include "nlohmann/json.hpp"
 #include <cstdint>
+#include <exception>
+#include <memory>
 
 void SceneManager::Destroy(GameObject* gameObjectToDestroy) {
+  if (gameObjectToDestroy == nullptr) return;
   GameObject* ParentGO = gameObjectToDestroy->ParentGameObject;
   if (gameObjectToDestroy->ParentGameObject) {
     for (auto it = ParentGO->ChildGameObjects.begin(); it != ParentGO->ChildGameObjects.end(); ++it) {
@@ -37,7 +39,7 @@ void SceneManager::Destroy(GameObject* gameObjectToDestroy) {
   // delete gameObjectToDestroy;
 }
 
-void SceneManager::ReleaseSingleMeshRenderable(MeshNode* current) {
+void SceneManager::ReleaseSingleMeshRenderable(std::shared_ptr<MeshNode> current) {
   int sz = current->renderableIdx.size();
   for (int i = 0 ; i < sz; ++i) {
     graphics_manager->ReleaseRenderable(current->renderableIdx[i]);
@@ -47,7 +49,7 @@ void SceneManager::ReleaseSingleMeshRenderable(MeshNode* current) {
   }
 }
 
-void SceneManager::SetMainCamera(Camera* cam) {
+void SceneManager::SetMainCamera(GameObject* cam) {
   this->MainCamera = cam;
 }
 
@@ -55,7 +57,7 @@ SceneManager::~SceneManager() {
   Destroy(HierachyRoot);
 }
 
-void SceneManager::InitSingleMeshRenderable(MeshNode* current, uint32_t shader_idx) {
+void SceneManager::InitSingleMeshRenderable(std::shared_ptr<MeshNode> current, uint32_t shader_idx) {
   int sz = current->meshes.size();
   current->renderableIdx.clear();
   for (int i = 0; i < sz; ++i) {
@@ -66,10 +68,10 @@ void SceneManager::InitSingleMeshRenderable(MeshNode* current, uint32_t shader_i
   }
 }
 
-void SceneManager::ResetSingleMeshModelMatrix(MeshNode* current, Eigen::Matrix4f model) {
+void SceneManager::ResetSingleMeshModelMatrix(std::shared_ptr<MeshNode> current, Eigen::Matrix4f model) {
   int sz = current->meshes.size();
   for (int i = 0; i < sz; ++i) {
-    graphics_manager->setMat4(current->renderableIdx[i], model);
+    graphics_manager->setModel(current->renderableIdx[i], model);
   }
   for (auto x : current->children) {
     ResetSingleMeshModelMatrix(x, model);
@@ -78,20 +80,21 @@ void SceneManager::ResetSingleMeshModelMatrix(MeshNode* current, Eigen::Matrix4f
 
 void SceneManager::ResetModelMatrix(GameObject* current) {
   Eigen::Matrix4f perspective;
-  perspective <<  1 / (tan(MainCamera->fovY / 2) * MainCamera->aspect), 0, 0, 0,
-                  0, 1 / tan(MainCamera->fovY / 2), 0, 0,
-                  0, 0, (MainCamera->zFar + MainCamera->zNear) / (MainCamera->zFar - MainCamera->zNear), -2 * MainCamera->zFar * MainCamera->zNear / (MainCamera->zFar - MainCamera->zNear),
+  Camera* MCam = (Camera*)MainCamera->GetComponent<Camera>();
+  perspective <<  1 / (tan(MCam->fovY / 2) * MCam->aspect), 0, 0, 0,
+                  0, 1 / tan(MCam->fovY / 2), 0, 0,
+                  0, 0, (MCam->zFar + MCam->zNear) / (MCam->zFar - MCam->zNear), -2 * MCam->zFar * MCam->zNear / (MCam->zFar - MCam->zNear),
                   0, 0, 1, 0;
 
-  auto camR = MainCamera->camDirection.cross(MainCamera->camUp);
+  auto camR = MCam->camDirection.cross(MCam->camUp);
   auto tf = dynamic_cast<Transform*>(MainCamera->GetComponent<Transform>());
   
   Eigen::Matrix4f lookAt;
   Eigen::Matrix4f tr;
 
   lookAt << camR.x(), camR.y(), camR.z(), 0,
-            MainCamera->camUp.x(), MainCamera->camUp.y(), MainCamera->camUp.z(), 0,
-            MainCamera->camDirection.x(), MainCamera->camDirection.y(), MainCamera->camDirection.z(), 0,
+            MCam->camUp.x(), MCam->camUp.y(), MCam->camUp.z(), 0,
+            MCam->camDirection.x(), MCam->camDirection.y(), MCam->camDirection.z(), 0,
             0, 0, 0, 1;
   
   tr << 1, 0, 0, -tf->position().x(),
@@ -107,6 +110,9 @@ void SceneManager::ResetModelMatrix(GameObject* current) {
 
 void SceneManager::ResetModelMatrixRecur(GameObject* current) {
   graphics_manager->setGlobalVec3("lightPos", ((PointLightSource*)lightSource[0])->lightPosition);
+  graphics_manager->setGlobalVec3("camPos", ((Transform*)MainCamera->GetComponent<Transform>())->position());
+  // graphics_manager->setGlobalFloat("metallic", 0.4);
+  // graphics_manager->setGlobalFloat("roughness", 0.5);
   for (auto x : current->ChildGameObjects) {
     ResetModelMatrixRecur(x);
   }
@@ -115,18 +121,7 @@ void SceneManager::ResetModelMatrixRecur(GameObject* current) {
     for (int j = 0; j < size; ++j) {
       uint32_t size = current->GetComponentCount<MeshReference>();
       auto tf = dynamic_cast<Transform*>(current->GetComponent<Transform>());
-      Eigen::Matrix4f model;
-
-      Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-      transform.scale(tf->scale());
-      transform.rotate(
-        Eigen::AngleAxisf(tf->rotation().x(), Eigen::Vector3f::UnitX()) * 
-        Eigen::AngleAxisf(tf->rotation().y(), Eigen::Vector3f::UnitY()) * 
-        Eigen::AngleAxisf(tf->rotation().z(), Eigen::Vector3f::UnitZ())
-        );
-      transform.translate(tf->position());
-
-      model = transform.matrix();
+      auto model = tf->getModelMatrix();
 
       if (size) {
         for (int j = 0; j < size; ++j) {
@@ -211,17 +206,52 @@ void SceneManager::RenderScene() {
   graphics_manager->DrawAll();
 }
 
-/*
-  .runascene format:
-  Element:
-  {
-    GameObjectTypeName
-    GameObjectID
-    FatherGameObjectID
-    GameObjectDataLength
-    GameObjectData
+void SceneManager::SaveScene(const std::string path) {
+  nlohmann::json scenejson;
+  scenejson["sceneName"] = this->sceneName;
+  scenejson["mainCamera"] = this->MainCamera->GetGUID().str();
+  SaveGameObject(scenejson, HierachyRoot, nullptr);
+  std::ofstream outfile(path.c_str());
+  outfile << scenejson.dump(2);
+  outfile.close();
+}
+
+void SceneManager::SaveGameObject(nlohmann::json &scenejson, GameObject* go, GameObject* parent) {
+  nlohmann::json subjson;
+  if (parent)
+    subjson["parent"] = parent->GetGUID().str();
+  else
+    subjson["parent"] = "null";
+  subjson["name"] = go->name;
+  for (auto &x : go->Componentss) {
+    nlohmann::json componentjson;
+    for (auto &y : x.second) {
+      componentjson[y->guid] = ComponentSerializeHelper::getSerialized(typeid(*y), y);
+    }
+    subjson[x.first] = componentjson;
   }
-*/
-void SceneManager::SaveScene() {
+  scenejson[go->GetGUID().str()] = subjson;
+  for (auto &x : go->ChildGameObjects) {
+    SaveGameObject(scenejson, x, go);
+  }
+}
+
+void SceneManager::loadScene(std::string_view path) {
+  // this->ClearSceneRenderable();
+  // this->graphics_manager->Clear();
+  // this->Destroy(HierachyRoot);
+
+  std::ifstream file(std::string(path).c_str());
+  if (!file.is_open()) {
+    std::cerr << "Opening runascene file failed." << std::endl;
+    return;
+  }
+  nlohmann::json j;
+  try {
+    file >> j;
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to resolve runascene(json): " << e.what() << std::endl;
+    return;
+  }
 
 }

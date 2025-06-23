@@ -31,9 +31,12 @@ class GraphicsManagerModule {
     virtual void ReleaseAll() = 0;
     virtual void Clear() = 0;
     virtual void UseShader(std::shared_ptr<ShaderModule> shader) = 0;
-    virtual void setMat4(uint32_t idx, Eigen::Matrix4f mat) = 0;
+    virtual void setModel(uint32_t idx, Eigen::Matrix4f mat) = 0; // for renderable
+    virtual void setVec3(uint32_t idx, const std::string& name, Eigen::Vector3f vec) = 0; // for shader
+    virtual void setFloat(uint32_t idx, const std::string& name, float value) = 0; // for shader
     virtual void setGlobalMat4(const std::string& name, Eigen::Matrix4f mat) = 0;
     virtual void setGlobalVec3(const std::string& name, Eigen::Vector3f vec) = 0;
+    virtual void setGlobalFloat(const std::string& name, float value) = 0;
     virtual void setView(Eigen::Matrix4f) = 0;
     virtual void setPerspective(Eigen::Matrix4f) = 0;
 };

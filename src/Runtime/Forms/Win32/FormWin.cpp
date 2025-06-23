@@ -139,6 +139,12 @@ LRESULT CALLBACK FormWin::myWndProc(
   LRESULT hr = 0;
   switch (message)
   {
+    case WM_MOUSEWHEEL:
+    {
+      int delta = GET_WHEEL_DELTA_WPARAM(wparam);
+      float wstep = static_cast<float>(delta) / WHEEL_DELTA;
+      ImGui::GetIO().MouseWheel = wstep;
+    }
     case WM_PAINT:
     SwapBuffers(m_hdc);
     case WM_DESTROY:

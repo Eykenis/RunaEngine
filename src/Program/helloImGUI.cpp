@@ -9,6 +9,7 @@
 #include "../Runtime/Scene/Mesh.h"
 #include "src/Runtime/AssetsImport/MeshImporter.h"
 #include "src/Runtime/Core/Memory/MemoryManager.h"
+#include "src/Runtime/Core/eigen-3.4.0/Eigen/src/Core/Matrix.h"
 #include "src/Runtime/Core/eigen-3.4.0/Eigen/src/Geometry/Transform.h"
 #include "src/Runtime/Scene/Components/MeshReference.h"
 #include "src/Runtime/Scene/Components/ShaderReference.h"
@@ -42,33 +43,31 @@ int main()
   
   ImGui_ImplWin32_InitForOpenGL(form->getHwnd());
   ImGui_ImplOpenGL3_Init();
-
-  GameObject* RootObject = MemoryManager::New<GameObject>();
+  GameObject* RootObject = MemoryManager::New<GameObject>("HierachyRoot");
   SceneManager* scene = MemoryManager::New<SceneManager>(RootObject, gW, gH);
 
-  GameObject* go = MemoryManager::New<GameObject>();
+  GameObject* go = MemoryManager::New<GameObject>("Model");
   scene->AddNewGameObject(go);
   uint32_t model_idx = 0;
+  go->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
+  go->AddComponent<ShaderReference>(MemoryManager::New<ShaderReference>());
 
-  // go->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
-  // go->AddComponent<ShaderReference>();
-
-  GameObject* grid = MemoryManager::New<GameObject>();
+  GameObject* grid = MemoryManager::New<GameObject>("Groundgrid");
   scene->AddNewGameObject(grid);
   grid->AddComponent<MeshReference>(MeshImporter::ReadMesh("../assets/models/test.obj"));
   grid->AddComponent<ShaderReference>(MemoryManager::New<ShaderReference>("../assets/shaders/gridshader.vs", "../assets/shaders/gridshader.ps"));
 
-  GameObject* cam = MemoryManager::New<Camera>(0, 0, -1.0f, 0, 1.0f, 2.0f, 90.0f);
-  ((Camera*)cam)->aspect = 1.0f * gW / gH;
+  GameObject* cam = MemoryManager::New<GameObject>("Camera");
+  cam->AddComponent<Camera>();
   scene->AddNewGameObject(cam);
-  scene->SetMainCamera((Camera*)cam);
+  scene->SetMainCamera(cam);
 
   LightSource* ls = MemoryManager::New<PointLightSource>(1.0f, Eigen::Vector3f(3.0f, 0.0f, 3.0f));
   scene->AddLightSource(ls);
   scene->InitSceneRenderable();
 
   ImVec2 window_pos(gW, 0);
-  ImVec2 startMousePoint, endMousePoint;
+  ImVec2 startMousePoint;
   auto t1 = clock();
 
   while (form->DisplayFrame()) {
@@ -85,14 +84,16 @@ int main()
 
           ImGui::Begin("Hello, Runa Engine!", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);                          // Create a window called "Hello, world!" and append into it.
           ImGui::SliderFloat("Light Intensity", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-
+          if (ImGui::Button("Save Scene")) {
+            scene->SaveScene("../assets/scenes/test_scene.runascene");
+          }
           if (ImGui::Button("Change Model")) {
             scene->Destroy(go);
             model_idx ^= 1;
 
-            auto gos = MemoryManager::New<GameObject>();
+            auto gos = MemoryManager::New<GameObject>("Model");
             gos->AddComponent<MeshReference>(MeshImporter::ReadMesh(model_path[model_idx]));
-            gos->AddComponent<ShaderReference>();
+            gos->AddComponent<ShaderReference>(MemoryManager::New<ShaderReference>("../assets/shaders/gridshader.vs", "../assets/shaders/gridshader.ps"));
             // if (model_idx != 1)
             //   gos->AddComponent<ShaderReference>();
             // else
@@ -104,22 +105,22 @@ int main()
           auto tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
           auto tfgo = dynamic_cast<Transform*>(go->GetComponent<Transform>());
           if (ImGui::IsKeyDown(ImGuiKey_W)) {
-            tf->position() += dynamic_cast<Camera*>(cam)->camDirection * delta_time * 3.0f;
+            tf->position() += dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camDirection * delta_time * 3.0f;
           }
           if (ImGui::IsKeyDown(ImGuiKey_S)) {
-            tf->position() -= dynamic_cast<Camera*>(cam)->camDirection * delta_time * 3.0f;
+            tf->position() -= dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camDirection * delta_time * 3.0f;
           }
           if (ImGui::IsKeyDown(ImGuiKey_A)) {
-            tf->position() -= dynamic_cast<Camera*>(cam)->camRight() * delta_time * 3.0f;
+            tf->position() -= dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camRight() * delta_time * 3.0f;
           }
           if (ImGui::IsKeyDown(ImGuiKey_D)) {
-            tf->position() += dynamic_cast<Camera*>(cam)->camRight() * delta_time * 3.0f;
+            tf->position() += dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camRight() * delta_time * 3.0f;
           }
           if (ImGui::IsKeyDown(ImGuiKey_Space)) {
-            tf->position() += dynamic_cast<Camera*>(cam)->camUp * delta_time * 3.0f;
+            tf->position() += dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camUp * delta_time * 3.0f;
           }
           if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
-            tf->position() -= dynamic_cast<Camera*>(cam)->camUp * delta_time * 3.0f;
+            tf->position() -= dynamic_cast<Camera*>(cam->GetComponent<Camera>())->camUp * delta_time * 3.0f;
           }
           if (tfgo) {
             if (ImGui::IsKeyDown(ImGuiKey_Q)) {
@@ -144,18 +145,25 @@ int main()
           ImGui::End();
       }
       {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
           startMousePoint = ImGui::GetIO().MousePos;
         }
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-          ImVec2 delta = ImVec2(ImGui::GetIO().MousePos.x - startMousePoint.x, ImGui::GetIO().MousePos.y - startMousePoint.y);
-          Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-          transform.translate(Eigen::Vector3f(-delta.x / 128 / 2 , delta.y / 72 / 2, 0.0f));
 
-          Transform* tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
-          tf->position() = (transform.matrix() * Eigen::Vector4f(tf->position().x(), tf->position().y(), tf->position().z(), 1.0f)).head<3>();
-          startMousePoint = ImGui::GetIO().MousePos;
+        Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+        Transform* tf = dynamic_cast<Transform*>(cam->GetComponent<Transform>());
+
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
+          ImVec2 delta = ImVec2(io.MousePos.x - startMousePoint.x, io.MousePos.y - startMousePoint.y);
+          transform.translate(-(dynamic_cast<Camera*>(cam->GetComponent<Camera>()))->camRight() * delta.x / gW * 2);
+          transform.translate((dynamic_cast<Camera*>(cam->GetComponent<Camera>()))->camUp * delta.y / gH * 2);
+          
+          startMousePoint = io.MousePos;
         }
+        float whlDelta = io.MouseWheel * 0.1;
+        
+        transform.translate(whlDelta * (dynamic_cast<Camera*>(cam->GetComponent<Camera>()))->camDirection);
+
+        tf->position() = (transform.matrix() * Eigen::Vector4f(tf->position().x(), tf->position().y(), tf->position().z(), 1.0f)).head<3>();
       }
       ImGui::SetNextWindowPos(ImVec2(0, 0));
       ImGui::SetNextWindowSize(ImVec2(gW, fH - gH - 40));

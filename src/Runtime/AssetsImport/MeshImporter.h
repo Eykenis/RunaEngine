@@ -16,7 +16,7 @@
 
 class MeshImporter {
 private:
-  static void ProcessNode(MeshNode* meshNode, aiNode* node, const aiScene* scene);
+  static void ProcessNode(std::shared_ptr<MeshNode> meshNode, aiNode* node, const aiScene* scene);
   static Mesh ProcessMesh(aiMesh* mesh, const aiScene *scene);
 public:
   static MeshReference* ReadMesh(const std::string& fileName);

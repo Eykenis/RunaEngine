@@ -6,5 +6,6 @@ public:
   Component() {
     guid = xg::newGuid();
   }
-  virtual ~Component() { };
+  virtual ~Component() = default;
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Component, guid)
 };

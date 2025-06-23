@@ -47,6 +47,10 @@ void ShaderGL::setVec3(const std::string &name, const Eigen::Vector3f &vec) {
     glUniform3f(glGetUniformLocation(m_shaderProgram, name.c_str()), vec.x(), vec.y(), vec.z());
 }
 
+void ShaderGL::setFloat(const std::string &name, const float value) {
+    glUniform1f(glGetUniformLocation(m_shaderProgram, name.c_str()), value);
+}
+
 ShaderGL::~ShaderGL() {
 
 }

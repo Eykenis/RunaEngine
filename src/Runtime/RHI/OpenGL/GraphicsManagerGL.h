@@ -16,6 +16,9 @@ struct RenderableGL {
     uint32_t isize;
     uint32_t EBO;
     uint32_t VAO;
+    // uniform value position which need to be set while rendering
+    std::map<std::string, Eigen::Vector3f> uniform_vec3f;
+    std::map<std::string, float> uniform_float;
 };
 
 class GraphicsManagerGL : public GraphicsManagerModule {
@@ -33,9 +36,12 @@ class GraphicsManagerGL : public GraphicsManagerModule {
     virtual void ReleaseAll();
     virtual void Clear();
     virtual void UseShader(std::shared_ptr<ShaderModule> shader);
-    virtual void setMat4(uint32_t idx, Eigen::Matrix4f mat);
+    virtual void setModel(uint32_t idx, Eigen::Matrix4f mat);
+    virtual void setVec3(uint32_t idx, const std::string& name, Eigen::Vector3f vec);
+    virtual void setFloat(uint32_t idx, const std::string& name, float value);
     virtual void setGlobalMat4(const std::string& name, Eigen::Matrix4f mat);
     virtual void setGlobalVec3(const std::string& name, Eigen::Vector3f vec);
+    virtual void setGlobalFloat(const std::string& name, float value);
     virtual void setView(Eigen::Matrix4f);
     virtual void setPerspective(Eigen::Matrix4f);
     private:

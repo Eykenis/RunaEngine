@@ -11,10 +11,11 @@ public:
   std::vector<float> Position;
   std::vector<float> Normal;
   std::vector<int> Face; // only triangle supported
-  std::vector<float> TexCoord[MAX_TEXCOORD_COUNT];
+  std::array<std::vector<float>, MAX_TEXCOORD_COUNT> TexCoord;
   Material material;
   
   Mesh() : TexCoordCount(0) { }
   virtual ~Mesh() { }
   friend class MeshImporter;
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Mesh, TexCoordCount, Position, Normal, Face, TexCoord, material)
 };

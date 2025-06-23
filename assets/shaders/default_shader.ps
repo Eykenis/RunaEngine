@@ -1,3 +1,5 @@
+// fallback shader (default Blinn-Phong)
+
 #version 330 core
 in vec3 normal;
 in vec2 texcoord;
@@ -6,11 +8,24 @@ out vec4 FragColor;
 
 uniform sampler2D texture1;
 uniform vec3 lightPos;
+uniform vec3 camPos;
+
+uniform vec3 Ka;
+uniform vec3 Kd;
+uniform vec3 Ks;
+uniform float Ni;
+uniform float Ns;
+uniform float d;
 
 void main()
 {
     vec3 lightDir = normalize(lightPos - worldPos.xyz);
+    vec3 viewDir = normalize(camPos - worldPos.xyz);
+    vec3 halfDir = normalize(lightDir + viewDir);
+
     float diff = max(dot(normal, lightDir), 0);
-    vec4 texcolor = texture(texture1, texcoord);
-    FragColor = vec4((diff * texcolor).xyz, 1.0f);
+    vec3 diffuse = Kd * diff * texture(texture1, texcoord).xyz;
+    vec3 specular = Ks * pow(max(0, dot(normal, halfDir)), Ns) * texture(texture1, texcoord).xyz;
+    vec3 ambient = Ka * texture(texture1, texcoord).xyz;
+    FragColor = vec4(ambient + specular + diffuse, d);
 }

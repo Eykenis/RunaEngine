@@ -1,12 +1,14 @@
 #pragma once
+
 #include <crossguid/guid.hpp>
+#include <nlohmann/json.hpp>
 
 class BaseObject {
-protected:
-  xg::Guid guid;
 public:
+  xg::Guid guid;
   BaseObject() {
     guid = xg::newGuid();
   }
-  virtual ~BaseObject() { }
+  virtual ~BaseObject() = default;
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(BaseObject, guid)
 };

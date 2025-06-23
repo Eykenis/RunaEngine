@@ -1,0 +1,138 @@
+{
+  "29946d38-0d5e-4108-860a-5e8ef9ce467e": {
+    "class MeshReference": null,
+    "class Transform": {
+      "7995c4da-067d-403d-9420-0adaee7bce49": {
+        "_Position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "name": "HierachyRoot",
+    "parent": "null"
+  },
+  "4d772a5e-fc7c-4e8d-8b02-918c4b570477": {
+    "class Camera": {
+      "9904e0d0-7742-4a26-b468-84c34b5fbbf0": {
+        "aspect": 1.7777777910232544,
+        "camDirection": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "camUp": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "fovY": 1.5707964897155762,
+        "zFar": 30.0,
+        "zNear": 0.10000000149011612
+      }
+    },
+    "class MeshReference": null,
+    "class Transform": {
+      "72b228d7-717b-4a8a-8102-bd66e1aa9210": {
+        "_Position": [
+          0.0,
+          0.9150002002716064,
+          3.4020016193389893
+        ],
+        "_Rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "name": "Camera",
+    "parent": "29946d38-0d5e-4108-860a-5e8ef9ce467e"
+  },
+  "5de1fce8-4f71-4f2c-b4c7-11fe02e4501e": {
+    "class MeshReference": {
+      "1916bebc-2633-4e3c-b34e-bb826c25b274": {
+        "filepath": "../assets/models/test.obj"
+      }
+    },
+    "class ShaderReference": {
+      "23e82306-57a8-4d10-8c9f-5a791bb17ea6": {
+        "fpath": "../assets/shaders/gridshader.ps",
+        "vpath": "../assets/shaders/gridshader.vs"
+      }
+    },
+    "class Transform": {
+      "50396343-a1b7-4b7e-924a-f6bd4c52fc34": {
+        "_Position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "name": "Groundgrid",
+    "parent": "29946d38-0d5e-4108-860a-5e8ef9ce467e"
+  },
+  "75f04f93-a420-401c-8b5d-590f312d7e5d": {
+    "class MeshReference": {
+      "3042e6fd-ba77-4bfa-b855-466432cd9aa6": {
+        "filepath": "../assets/models/Aiz.obj"
+      }
+    },
+    "class ShaderReference": {
+      "7323dd57-8c27-4cee-8dc5-b44e88a62fcb": {
+        "fpath": "../assets/shaders/default_shader.ps",
+        "vpath": "../assets/shaders/default_shader.vs"
+      }
+    },
+    "class Transform": {
+      "dd5e54f8-48fa-404f-9146-554d4dc72167": {
+        "_Position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "_Scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "name": "Model",
+    "parent": "29946d38-0d5e-4108-860a-5e8ef9ce467e"
+  },
+  "mainCamera": "4d772a5e-fc7c-4e8d-8b02-918c4b570477",
+  "sceneName": ""
+}

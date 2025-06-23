@@ -85,7 +85,7 @@ void GraphicsManagerGL::Clear() {
     glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsManagerGL::setMat4(uint32_t idx, Eigen::Matrix4f mat) {
+void GraphicsManagerGL::setModel(uint32_t idx, Eigen::Matrix4f mat) {
     if (idx >= this->renderable.size()) return;
     renderable[idx].matModel = mat; // Only model mat need modification. As view mat & perspective mat all comes from the camera.
 }
@@ -101,6 +101,23 @@ void GraphicsManagerGL::setGlobalVec3(const std::string& name, Eigen::Vector3f v
     for (auto x : shaders) {
         x->Use();
         x->setVec3(name, vec);
+    }
+}
+
+void GraphicsManagerGL::setVec3(uint32_t idx, const std::string& name, Eigen::Vector3f vec) {
+    shaders[idx]->Use();
+    shaders[idx]->setVec3(name, vec);
+}
+
+void GraphicsManagerGL::setFloat(uint32_t idx, const std::string& name, float value) {
+    shaders[idx]->Use();
+    shaders[idx]->setFloat(name, value);
+}
+
+void GraphicsManagerGL::setGlobalFloat(const std::string& name, float value) {
+    for (auto x : shaders) {
+        x->Use();
+        x->setFloat(name, value);
     }
 }
 
@@ -136,6 +153,15 @@ uint32_t GraphicsManagerGL::CreateRenderable(Mesh* mesh, uint32_t shader_idx) {
     ret.VBOs.push_back(texcoord.get()->getVertices());
     ret.vsize.push_back(mesh->Position.size());
     ret.isize = mesh->Face.size();
+
+    // uniform attributes
+    ret.uniform_float["d"] = mesh->material.d;
+    ret.uniform_float["Ni"] = mesh->material.Ni;
+    ret.uniform_float["Ns"] = mesh->material.Ns;
+    ret.uniform_vec3f["Ka"] = mesh->material.Ka;
+    ret.uniform_vec3f["Kd"] = mesh->material.Kd;
+    ret.uniform_vec3f["Ks"] = mesh->material.Ks;
+
     glBindVertexArray(0);
 
     // renderable.emplace_back(ret);
@@ -232,6 +258,17 @@ void GraphicsManagerGL::DrawAll() {
         shader->setMat4("model", renderable[i].matModel);
         shader->setMat4("view", view);
         shader->setMat4("perspective", perspective);
+        for (auto &x : renderable[i].uniform_float) {
+            shader->setFloat(x.first, x.second);
+            // comments below for DEBUG
+            // std::cout << "set float " << x.first << " " << x.second << std::endl;
+        }
+        for (auto &x : renderable[i].uniform_vec3f) {
+            shader->setVec3(x.first, x.second);
+            // comments below for DEBUG
+            // std::cout << "set vec3 " << x.first << " " << x.second << std::endl;
+        }
+
         if (renderable[i].tex) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, renderable[i].tex);
